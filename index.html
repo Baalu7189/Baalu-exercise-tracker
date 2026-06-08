@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Exercise Tracker" />
+<meta name="theme-color" content="#ffffff" />
+<title>Exercise Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #ebebeb;
+    --text: #1a1a1a; --text2: #555; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --accent: #534AB7; --accent-bg: #EEEDFE; --accent-text: #3C3489;
+    --radius: 10px; --radius-lg: 14px;
+    --strength: #EEEDFE; --strength-text: #3C3489;
+    --cardio: #E1F5EE; --cardio-text: #085041;
+    --bw: #FAEEDA; --bw-text: #633806;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+      --text: #f2f2f7; --text2: #aeaeb2; --text3: #636366;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --strength: #26215C; --strength-text: #CECBF6;
+      --cardio: #04342C; --cardio-text: #9FE1CB;
+      --bw: #412402; --bw-text: #FAC775;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+  .app { max-width: 430px; margin: 0 auto; padding: 0 0 80px; }
+  .header { padding: 16px 16px 0; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .today-pill { font-size: 12px; background: var(--bg2); border-radius: 20px; padding: 4px 10px; color: var(--text2); border: 0.5px solid var(--border); }
+  .week-badge { font-size: 11px; background: var(--accent-bg); color: var(--accent-text); border-radius: 20px; padding: 4px 10px; font-weight: 500; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 0.5px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+  .bottom-nav button { flex: 1; padding: 10px 4px 8px; background: none; border: none; cursor: pointer; color: var(--text3); font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .bottom-nav button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .bottom-nav button.active { color: var(--accent); }
+  .tab { display: none; padding: 12px 16px; }
+  .tab.active { display: block; }
+  .section-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; margin-top: 16px; }
+  .section-label:first-child { margin-top: 4px; }
+  .chip-grid { display: flex; flex-direction: column; gap: 7px; margin-bottom: 4px; }
+  .exercise-chip { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border: 0.5px solid var(--border); border-radius: var(--radius); background: var(--bg); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .exercise-chip:active, .exercise-chip.selected { background: var(--bg2); border-color: var(--border2); }
+  .exercise-chip .name { font-size: 14px; font-weight: 500; }
+  .type-pill { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+  .type-pill.strength { background: var(--strength); color: var(--strength-text); }
+  .type-pill.cardio { background: var(--cardio); color: var(--cardio-text); }
+  .type-pill.bodyweight { background: var(--bw); color: var(--bw-text); }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
+  .field-group { margin-bottom: 12px; }
+  .field-group label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+  input[type=text], input[type=number] { width: 100%; padding: 10px 12px; font-size: 15px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); outline: none; -webkit-appearance: none; }
+  input:focus { border-color: var(--accent); background: var(--bg); }
+  .type-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .type-tab { padding: 6px 14px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: 20px; background: transparent; cursor: pointer; color: var(--text2); -webkit-tap-highlight-color: transparent; }
+  .type-tab.active { background: var(--bg2); color: var(--text); font-weight: 500; border-color: var(--border2); }
+  .fields-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+  .fields-row-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+  .btn { width: 100%; padding: 13px; font-size: 15px; font-weight: 600; border-radius: var(--radius); border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #fff; margin-top: 6px; }
+  .btn-secondary { background: var(--bg2); color: var(--text); border: 0.5px solid var(--border2); margin-top: 6px; }
+  .log-card { border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 13px 14px; margin-bottom: 10px; background: var(--bg); }
+  .log-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .log-card-name { font-size: 15px; font-weight: 600; }
+  .log-card-detail { font-size: 13px; color: var(--text2); }
+  .log-card-note { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .del-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 2px; font-size: 18px; line-height: 1; }
+  .week-tabs { display: grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap: 3px; margin-bottom: 14px; }
+  .week-tab { padding: 6px 2px; font-size: 10px; border: 0.5px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer; color: var(--text2); text-align: center; -webkit-tap-highlight-color: transparent; }
+  .week-tab.active { background: var(--accent-bg); color: var(--accent-text); font-weight: 600; border-color: var(--accent); }
+  .day-tabs { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 4px; margin-bottom: 14px; }
+  .day-tab { padding: 7px 2px; font-size: 11px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; cursor: pointer; color: var(--text2); text-align: center; -webkit-tap-highlight-color: transparent; }
+  .day-tab.active { background: var(--bg2); color: var(--text); font-weight: 600; border-color: var(--border2); }
+  .setup-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 0.5px solid var(--border); border-radius: var(--radius); margin-bottom: 7px; background: var(--bg); }
+  .setup-item-left { display: flex; align-items: center; gap: 10px; }
+  .setup-item span { font-size: 14px; }
+  .add-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .add-row input { flex: 1; min-width: 0; }
+  .add-row select { flex: 0 0 110px; padding: 10px 8px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); -webkit-appearance: none; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; line-height: 1.6; }
+  .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); border-radius: 20px; padding: 9px 18px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; z-index: 100; }
+  .toast.show { opacity: 1; }
+  .info-box { background: var(--accent-bg); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; font-size: 12px; color: var(--accent-text); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Exercise Tracker</h1>
+    <div class="header-right">
+      <span class="today-pill" id="header-day"></span>
+      <span class="week-badge" id="header-week"></span>
+    </div>
+  </div>
+
+  <div class="tab active" id="tab-log"><div id="log-content"></div></div>
+  <div class="tab" id="tab-history"><div id="history-content"></div></div>
+  <div class="tab" id="tab-schedule">
+    <p class="section-label" style="margin-top:4px">Week</p>
+    <div class="week-tabs" id="week-tabs-1"></div>
+    <div class="week-tabs" id="week-tabs-2"></div>
+    <p class="section-label">Day</p>
+    <div class="day-tabs" id="day-tabs">
+      <button class="day-tab active" onclick="selectDay(0)">Mon</button>
+      <button class="day-tab" onclick="selectDay(1)">Tue</button>
+      <button class="day-tab" onclick="selectDay(2)">Wed</button>
+      <button class="day-tab" onclick="selectDay(3)">Thu</button>
+      <button class="day-tab" onclick="selectDay(4)">Fri</button>
+      <button class="day-tab" onclick="selectDay(5)">Sat</button>
+      <button class="day-tab" onclick="selectDay(6)">Sun</button>
+    </div>
+    <p class="section-label">Exercises for <span id="setup-label">Week 1 Monday</span></p>
+    <div id="setup-list"></div>
+    <hr class="divider">
+    <p class="section-label">Add exercise</p>
+    <div class="add-row">
+      <input type="text" id="new-ex-name" placeholder="Exercise name" autocomplete="off" />
+      <select id="new-ex-type">
+        <option value="strength">Weights</option>
+        <option value="cardio">Cardio</option>
+        <option value="bodyweight">Bodyweight</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="addExercise()">Add to day</button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="active" id="nav-log" onclick="showTab('log')">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Log
+  </button>
+  <button id="nav-history" onclick="showTab('history')">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>History
+  </button>
+  <button id="nav-schedule" onclick="showTab('schedule')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Schedule
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PLAN_SCHEDULE = {"1": {"MON": ["Wide Grip Pull Up", "Hyper Extension", "Overhand Machine Row", "Underhand Bent Over Row", "Wide Grip Lat Pull Down", "Seated Closed Grip Row", "Dumbell Curl", "Seated Bicep Curl", "Hammer Dumbell Curl", "EZ Barbell Curl"], "TUE": ["Incline Barbell Press", "Flat Dumbell Press", "Flat Barbell Press", "Incline Dumbell Press", "Pec Dec Cable Fly", "Tricep Dips", "Closed Grip EZ Bar Cable Pushdown", "Wide Grip EZ Bar Cable Pushdown", "Seated Tricep Extension"], "WED": ["Lying Hamstring Curl", "Standing Hamstring Curl", "Leg Press", "Leg Extension", "Aductors"], "THU": ["Dumbell Press", "Side Lateral Raise (Machine)", "Reverse Fly (Pec Dec)", "Smith Machine Shrug", "Dumbell Front Raise", "Dumbell Lateral Raise", "Standing Calf Raise", "Seated Calf Raise"], "FRI": ["Single Arm Cable Pushdown (Underhand)", "Single Arm Cable Pushdown (Overhand)", "Cable Overhead Tricep Extension", "Skull Crushers", "Rope Cable Pushdown", "Rope Hammercurl", "EZ Barbell Curl", "Seated Machine Single Curl"], "SUN": ["Hanging Leg Raise", "Weighted Cable Crunch", "Cable Woodchop Twist", "Plank", "Sit Ups", "Seated Calf Raise", "Standing Single Leg Calf Raise", "Standing Smith Machine Calf Raise", "Calf Extension Leg Press"]}, "2": {"MON": ["Deadlift", "Bent Over Barbell Row (Underhand)", "Bent Over Barbell Row (Overhand)", "Wide Grip Lat Pulldown", "One Arm Dumbell Row", "Standing V-Bar Row", "Hyper Extension", "Cable Lat Pullover", "Seated Machine Single Bicep Curl", "EZ Barbell Curl", "Dumbell Hammer Curl"], "TUE": ["Incline Barbell Press", "Flat Dumbell Press", "Pec Dec Fly", "Decline Barbell Press", "Incline Dumbell Press", "Cable Fly", "Cable Rope Pushdown", "Wide Grip Cable Pushdown", "Barbell Tricep Press"], "WED": ["Smith Machine Squat", "Dumbell Lunges", "Single Leg Extension", "Seated Hamstring Curl", "Leg Press", "Dumbell Straight Leg Deadlift"], "THU": ["Machine Shoulder Press", "Dumbell Front Raise", "Pec Dec Rear Fly", "Cable Lateral Raise", "Smith Machine Shrugs", "Dumbell Press", "Plate Front Raise", "Seated Calve Raise", "Standing Calve Raise"], "FRI": ["Bicep Machine Curl", "Single Arm Cable Curl", "Cable Rope Hammer Curl", "EZ Bar Cable Curl", "EZ Bar Cable Pushdown", "Machine Tricep Extension", "Dumbell Skull Crush", "Overhead EZ Bar Cable Extension"], "SUN": ["Sit Ups", "Dumbell Twist", "Assisted Standing Machine Crunch", "Side Plank", "Seated Bench Crunches", "Barbell Seated Calf Raise", "Smith Machine Seated Calf Raise", "Standing Barbell Calf Raise"]}, "3": {"MON": ["Rope Lat Pulldown", "Seated Cable Row (V Bar)", "Cable Lat Pullover", "Machine Row", "Wide Grip Pull Up", "Bent Over Barbell Row (Underhand)", "Hammer Curl", "Straight Bar Cable Curl", "Isolation Curl", "Cable Rope Hammer Curl"], "TUE": ["Incline Cable Fly", "Decline Smith Machine Press", "Flat Dumbell Press", "Incline Single Arm Dumbell Press", "Flat Machine Press", "Seated Incline Machine Press", "Weighted Tricep Dip", "Single Cable Pushdown", "Dumbell Skull Crush", "Bench Dips"], "WED": ["Lying Hamstring Curl", "Squats (Free Standing Squat Rack)", "Seated Hamstring Curl", "Leg Extension", "Barbell Lunges", "Hacksquat"], "THU": ["Military Press", "Barbell Front Raise", "Cable Rear Fly", "Machine Lateral Raise", "Barbell Shrugs", "Dumbell Lateral Raise", "Standing Smith Machine Calf Raise", "Seated Calf Machine Raise", "Single Calf Raise Own Body Weight"], "FRI": ["Closed Grip Tricep Smith Machine Press", "Machine Preacher Curl", "EZ Barbell Skull Crushers", "Closed Grip Pull Up", "Seated Dumbell Curl", "Smith Machine Drag Curl", "Overhead Cable Extension"], "SUN": ["Hanging Leg Raise", "Weighted Cable Crunch", "Machine Assisted Oblique Twist", "Weighted Sit Ups", "Twisted Knee Raises", "TRX Machine Crunches", "Plate Loaded Seated Calve Raise", "Calve Machine Press", "Standing Calve Raise"]}, "4": {"MON": ["Wide Grip Pull Up", "Closed Grip Pull Up", "Underhand Machine Row", "V Bar Seated Row", "Seated Machine Hyper Extension", "Overhand Machine Row", "Cable Rope Pull Over", "Bicep Dumbell Curl", "Machine Preacher Curl", "Rope Hammer Curl", "EZ Barbell Curl"], "TUE": ["Single Dumbell Flat Press", "Incline Dumbell Press", "Cable Fly", "Seated Single Pec Dec", "Seated Pec Dec Fly", "Dumbell Pullover", "Plate Loaded Seated Press", "Weighted Tricep Dips", "Tricep Smith Machine Press", "Rope Pushdown", "Machine Tricep Dips"], "WED": ["Hack Squat", "Leg Extension", "Single Leg Extension", "Lying Hamstring Curl", "Single Seated Hamstring Curl", "Leg Press", "Weighted Dumbell Lunges", "Weighted Sled Push"], "THU": ["Smith Machine Press", "Single Dumbell Press", "Standing Cable Front Raise", "Standing Dumbell Lateral Raise", "Standing Machine Shrugs", "Seated Fly Pec Dec", "Plate Loaded Seated Calf Raise", "Single Leg Calf Raise", "Standing Smith Machine Calf Raise", "Calf Extension Leg Press"], "FRI": ["Cable Rope Pulldown", "Single Arm Dumbell Skull Crush", "Own Bodyweight Bench Dips", "EZ Bar Cable Curl", "Dumbell Curls", "Smith Machine Drag Curl", "Tricep Dumbell Kickbacks", "Dumbell Hammer Curl"], "SUN": ["Hanging Leg Raise", "Plank", "Cable Rope Ab Crunches", "Lying Bench Leg Raise", "Dumbell Oblique Twist", "GHD Sit-Ups", "Smith Machine Standing Calf Raise", "Seated Machine Calf Press", "Seated Calf Raise"]}, "5": {"MON": ["Wide Grip Lat Pulldown", "Plate Loaded Seated Row", "Lying T-Bar Row", "Hyper Extension", "Single Arm Dumbell Row", "Closed Grip Cable Row", "Dumbell Curl", "Machine Bicep Curl", "Smith Machine Drag Curl", "Dumbell Hammer Curl"], "TUE": ["Incline Dumbell Press", "Seated Plate Loaded Chest Press", "Pec Dec", "Decline Barbell Press", "Chest Contraction", "Dumbell Pullover", "Smith Machine Flat Press", "Skull Crusher", "Bench Tricep Dips", "Machine Tricep Extension", "Cable Rope Trceip Pulldown"], "WED": ["Smith Machine Squat", "Dumbell Straight Leg Deadlift", "Single Leg Press", "Standing Single Leg Hamstring Curl", "Single Leg Extension", "Lying Hamstring Curl", "Aductor", "Abductor", "Walking Lunges"], "THU": ["Single Arm Dumbell Press", "Smith Machine Press", "Pec Dec Rear Fly", "Dumbell Lateral Raise", "Dumbell Shrug", "Single Arm Cable Front Raise", "Cable Front Raise (Both Shoulders)", "Plate Loaded Seated Calve Raise", "Calve Machine Press", "Standing Calve Raise"], "FRI": ["Seated EZ Barbell Skull Crush", "Plate Loaded Tricep Dip Machine", "Overhead Cable Tricep Extension", "Dumbell Hammer Curl", "Straight Barbell Curl", "Rope Hammer Curl", "Dumbell Preacher Curl", "Tricep Rope Extension"], "SUN": ["Incline Sit Ups", "Standing Weighted Crunch", "Cable Wood Chop", "Plank", "Bench Leg Raises", "Rope Cable Weighted Crunch", "Barbell Seated Calf Raise", "Smith Machine Seated Calf Raise", "Standing Barbell Calf Raise"]}, "6": {"MON": ["Wide Grip Lat Pulldown", "V Bar Seated Row", "Iso-Lateral High Raise Row", "Plate Loaded Seated T Bar Row", "Iso-Lateral Low Row", "Hyper Extension", "Machine Overhead Lat Pulldown", "Single Dumbell Bicep Curl", "Seated Isolated Bicep Curl", "Smith Machine Drag Curl", "Single Arm Hammer Curl"], "TUE": ["Barbell Bench Press", "Seated Machine Chest Press", "Incline Bench Cable Fly", "Incline Dumbell Pullover", "Peck Deck Machine", "Incline Dumbell Press", "Chest Dips", "Weighted Tricep Dips", "Dumbell Skull Crush", "Cable Rope Tricep Extension", "Seated Tricep Dips"], "WED": ["Smith Machine Squat", "Weighted Lunges (Squat Rack)", "Sissy Squat", "Leg Extension", "Seated Hamstring Curl", "Dumbell Straight Leg Deadlift", "Lying Hamstring Curl"], "THU": ["Plate Raises", "Cable Rope Overhead Extension", "Dumbell Side Lateral Raise", "Shoulder Press", "Smith Machine Reverse Shrug", "Smith Machine Military Press", "Plate Loaded Seated Calve Raise", "Calve Machine Press", "Standing Calve Raise"], "FRI": ["Rope Tricep Pulldown", "Wide Grip Tricep Pushdown", "60 Second Tricep Tensing", "EZ Barbell Skull Crush", "Single Arm Cable Pushdown", "Tricep Bench Dips", "Single Arm Cable Curl", "EZ Barbell Curl", "Dumbell Hammer Curl", "Cable Rope Hammer Curl", "Smith Machine Drag Curl"], "SUN": ["Hanging Leg Raise", "Cable Wood Chop", "TRX Side Crunches", "Weighted Cable Rope Crunch", "Standing Smith Machine Calf Raise", "Seated Calf Machine Raise", "Single Calf Raise Own Body Weight"]}, "7": {"MON": ["V Bar Lat Pulldown", "Standing T-Bar Row", "Rack Deadlift", "Single Arm Dumbell Row", "Seated Machine Overhand Row", "Seated Machine Hyper Extension", "Barbell Bicep Curl", "Single Arm Dumbell Curl", "EZ Bar Cable Curl", "Weighted Machine Curl", "Smith Machine Drag Curl"], "TUE": ["Barbell Bench Press", "Seated Machine Press", "Incline Bench Cable Fly", "Pec-Deck Machine", "Incline Dumbell Pullover", "Flat Bench Dumbell Press", "Rope Cable Pulldown", "Dumbell Skull Crush", "Machine Tricep Extension", "Bench Tricep Dips", "EZ Bar Cable Pushdown"], "WED": ["Front Squats (Squat Rack)", "Dumbell Lunge", "Weighted Sled Push", "Kettle Bell One-Legged Deadlift", "Single Leg Standing Hamstring Curl", "Seated Hamstring Curl"], "THU": ["Seated Dumbell Bent Over Delt Raise", "Seated Barbell Military Press", "Front Cable Raise", "Reverse Machine Flyes", "Upright Cable Row", "Side Lateral Raise", "Reverse Smith Machine Shrugs", "Seated Dumbell Shrugs", "Barbell Seated Calf Raise", "Smith Machine Seated Calf Raise", "Standing Barbell Calf Raise"], "FRI": ["Underhand Single Arm Cable Extension", "Overhand Single Arm Cable Extension", "Wide Grip EZ Bar Cable Pushdown", "Front Dip Machine", "EZ Bar Curl", "Single Arm Dumbell Curl", "Single Arm Overhead Cable Curl", "Preacher Curl", "Skull Crushers", "Hammer Curl"], "SUN": ["Hanging Leg Raise", "Weighted Cable Crunch", "Machine Assisted Oblique Twist", "Weighted Sit Ups", "Twisted Knee Raises", "TRX Machine Crunches", "Plate Loaded Seated Calve Raise", "Calve Machine Press", "Standing Calve Raise"]}, "8": {"MON": ["Barbell Deadlift", "Wide Grip Pull Up", "Standing T-Bar Row", "V-Bar Seated Row", "Hyper Extension", "Overhand Machine Row", "Standing Cable Face Curls", "Single Arm Dumbell Hammer Curls", "Dumbell Spider Curls"], "TUE": ["Barbell Bench Press", "Weighted Pushup", "Cable Fly", "Incline Dumbell Bench Press", "Dumbell Pullover", "Seated Machine Chest Press", "Chest Dips", "Rope Cable Push Down", "Dumbell Skull Crush", "Tricep Squeeze and Contraction", "Reverse Grip Pushdown", "Overhead Cable Extension", "Diamond Push Ups"], "WED": ["Goblet Squat", "Barbell Lunge", "Leg Press", "Lying Hamstring Curl", "Stiff Leg Dumbell Deadlift", "Seated Hamstring Curl"], "THU": ["Standing Front Barbell Raise", "Seated Bent Over Dumbell Delt Raise", "Machine Shoulder Press", "Pec Dec Rear Flys", "Machine Cable Side Lateral Raise", "Cable Rope Face Pulls", "Smith Machine Standing Calf Raise", "Seated Machine Calf Press", "Seated Calf Raise"], "FRI": ["Closed Grip Tricep Smith Machine Press", "Machine Preacher Curl", "EZ Barbell Skull Crushers", "Closed Grip Pull Up", "Seated Dumbell Curl", "Smith Machine Drag Curl", "Overhead Cable Extension"], "SUN": ["Machine Oblique Twists", "Hanging Leg Raise", "Cable Rope Ab Crunch", "Weighted Sit Ups", "Plank", "Seated Calf Press", "Plate Loaded Seated Calf Raise", "Smith Machine Calf Raise"]}, "9": {"MON": ["Seated T-Bar Row", "Hyper Extension", "Close Grip Pull Down", "Wide Grip Seated Cable Row", "Machine Assisted Lower Back Extension", "Single Arm Smith Machine Row", "Wide Grip Pull Up", "Stiff Arm Pull Down", "Hammer Curl", "Straight Bar Cable Curl", "Isolation Curl", "Dumbell Curl"], "TUE": ["Incline Barbell Press", "Flat Dumbell Press", "Pec Dec Fly", "Decline Barbell Press", "Incline Dumbell Press", "Cable Fly", "Chest Dips", "Pushups", "Weighted Tricep Dip", "Single Cable Pushdown", "Machine Tricep Extension", "Tricep Smith Machine Press"], "WED": ["Smith Machine Squat", "Lying Hamstring Curl", "Standing Hamstring Curl", "Leg Press", "Leg Extension", "Aductors"], "THU": ["Dumbell Press", "Side Lateral Raise (Machine)", "Reverse Fly (Pec Dec)", "Smith Machine Shrug", "Dumbell Front Raise", "Dumbell Lateral Raise", "Standing Calf Raise", "Seated Calf Raise"], "FRI": ["Closed Grip Tricep Smith Machine Press", "Machine Preacher Curl", "EZ Barbell Skull Crushers", "Closed Grip Pull Up", "Seated Dumbell Curl", "Smith Machine Drag Curl", "Overhead Cable Extension"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "10": {"MON": ["Wide Grip Pull Up", "Hyper Extension", "Overhand Machine Row", "Underhand Bent Over Row", "Machine Assisted Lower Back Extension", "Wide Grip Lat Pull Down", "Seated Closed Grip Row", "Cable Rope Pullover", "Bent Over Barbell Row (Underhand)", "Concentration Dumbell Curls", "Preacher Dumbell Hammer Curls", "EZ Bar Preacher Curls", "EZ Bar Drag Curl", "Cable Rope Curl"], "TUE": ["Pec Dec", "Seated Incline Machine Press", "Incline Bench Cable Fly", "Incline Dumbell Pullover", "Incline Single Arm Dumbell Press", "Flat Machine Press", "EZ Bar Skull Crush", "EZ Bar Underhand Cable Pull Down", "Tricep Squeeze and Contraction", "EZ Bar Overhand Cable Pull Down", "Cable Rope Pull Down"], "WED": ["Lunges", "Sled Push", "Single Standing Hamstring Curl", "Leg Press", "Lying Hamstring Curl", "Single Leg Extension", "Aductors"], "THU": ["Military Press", "Side Lateral Raise (Machine)", "Reverse Fly (Pec Dec)", "Smith Machine Shrug", "Single Dumbell Press", "Standing Cable Front Raise", "Dumbell Front Raise", "Dumbell Lateral Raise", "Seated Calf Press", "Plate Loaded Seated Calf Raise"], "FRI": ["Seated Tricep Extension Machine", "Lyng Single Arm Dumbell Skull Crush", "Seated Dumbell Skull Crush", "Overhead Rope Cable Extension", "Seated Machine Dips", "Overhand Barbell Curl", "Cable Curl Face Pulls", "Single Arm Cable Curl Face Pulls", "Plate Hammer Curls", "Bicep Squeeze and Contraction"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "11": {"MON": ["Wide Grip Pull Up", "Closed Grip Pull Up", "Underhand Machine Row", "V Bar Seated Row", "Seated Machine Hyper Extension", "Overhand Machine Row", "Cable Rope Pull Over", "Iso-Lateral Low Row", "Hammer Curl", "Straight Bar Cable Curl", "Isolation Curl"], "TUE": ["Incline Dumbell Press", "Seated Plate Loaded Chest Press", "Pec Dec", "Dumbell Pullover", "Smith Machine Flat Press", "Decline Barbell Press", "Chest Contraction", "Weighted Tricep Dip", "Single Cable Pushdown", "Single Arm Dumbell Skull Crush", "Bench Dips", "Tricep Squeeze and Contraction"], "WED": ["Lying Hamstring Curl", "Squats (Free Standing Squat Rack)", "Seated Hamstring Curl", "Leg Extension", "Barbell Lunges", "Aductors"], "THU": ["Military Press", "Barbell Front Raise", "Cable Rear Fly", "Machine Lateral Raise", "Barbell Shrugs", "Dumbell Lateral Raise", "Standing Smith Machine Calf Raise", "Seated Calf Machine Raise", "Single Calf Raise Own Body Weight"], "FRI": ["Seated EZ Barbell Skull Crush", "Plate Loaded Tricep Dip Machine", "Overhead Cable Tricep Extension", "Dumbell Hammer Curl", "Straight Barbell Curl", "Rope Hammer Curl", "Dumbell Preacher Curl", "Tricep Rope Extension"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "12": {"MON": ["Barbell Deadlift", "Wide Grip Pull Up", "Standing T-Bar Row", "V-Bar Seated Row", "Hyper Extension", "Overhand Machine Row", "Single Dumbell Bicep Curl", "Seated Isolated Bicep Curl", "Smith Machine Drag Curl", "Single Arm Hammer Curl"], "TUE": ["Incline Barbell Press", "Flat Dumbell Press", "Pec Dec Fly", "Decline Barbell Press", "Incline Dumbell Press", "Cable Fly", "Weighted Tricep Dips", "Tricep Smith Machine Press", "Rope Pushdown", "Machine Tricep Dips"], "WED": ["Weighted Lunges (Squat Rack)", "Sissy Squat", "Seated Hamstring Curl", "Dumbell Straight Leg Deadlift", "Lying Hamstring Curl"], "THU": ["Dumbell Press", "Side Lateral Raise (Machine)", "Reverse Fly (Pec Dec)", "Smith Machine Shrug", "Dumbell Front Raise", "Dumbell Lateral Raise", "Plate Loaded Seated Calve Raise", "Calve Machine Press", "Standing Calve Raise"], "FRI": ["Underhand Single Arm Cable Extension", "Overhand Single Arm Cable Extension", "Wide Grip EZ Bar Cable Pushdown", "Front Dip Machine", "EZ Bar Curl", "Single Arm Dumbell Curl", "Single Arm Overhead Cable Curl", "Preacher Curl", "Skull Crushers", "Hammer Curl"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "13": {"MON": ["Wide Grip Pull Up", "Closed Grip Pull Up", "Underhand Machine Row", "V Bar Seated Row", "Seated Machine Hyper Extension", "Overhand Machine Row", "Cable Rope Pull Over", "Single Dumbell Bicep Curl", "Seated Isolated Bicep Curl", "Smith Machine Drag Curl", "Single Arm Hammer Curl"], "TUE": ["Incline Dumbell Pullover", "Incline Single Arm Dumbell Press", "Flat Machine Press", "Rope Cable Pulldown", "Dumbell Skull Crush", "Machine Tricep Extension", "Bench Tricep Dips"], "WED": ["Goblet Squat", "Barbell Lunge", "Leg Press", "Lying Hamstring Curl", "Stiff Leg Dumbell Deadlift", "Seated Hamstring Curl"], "THU": ["Single Arm Dumbell Press", "Smith Machine Press", "Pec Dec Rear Fly", "Dumbell Lateral Raise", "Dumbell Shrug", "Single Arm Cable Front Raise", "Cable Front Raise (Both Shoulders)", "Barbell Seated Calf Raise", "Smith Machine Seated Calf Raise", "Standing Barbell Calf Raise"], "FRI": ["EZ Bar Cable Curl", "Dumbell Curls", "Smith Machine Drag Curl", "Tricep Dumbell Kickbacks", "Dumbell Hammer Curl"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "14": {"MON": ["Wide Grip Lat Pulldown", "Plate Loaded Seated Row", "Lying T-Bar Row", "Hyper Extension", "Single Arm Dumbell Row", "Closed Grip Cable Row", "Standing Cable Face Curls", "Single Arm Dumbell Hammer Curls", "Dumbell Spider Curls"], "TUE": ["Closed Grip Tricep Smith Machine Press", "Machine Preacher Curl", "EZ Barbell Skull Crushers"], "WED": ["Smith Machine Squat", "Lying Hamstring Curl", "Standing Hamstring Curl", "Leg Press", "Leg Extension", "Aductors"], "THU": ["Dumbell Press", "Side Lateral Raise (Machine)", "Reverse Fly (Pec Dec)", "Smith Machine Shrug", "Dumbell Front Raise", "Dumbell Lateral Raise", "Standing Smith Machine Calf Raise", "Standing Smith Machine Calf Raise", "Single Calf Raise Own Body Weight"], "FRI": ["EZ Bar Cable Curl", "Dumbell Curls", "Smith Machine Drag Curl", "Tricep Dumbell Kickbacks", "Dumbell Hammer Curl"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "15": {"MON": ["Wide Grip Lat Pulldown", "Hyper Extension", "Overhand Machine Row", "Underhand Bent Over Row", "Wide Grip Lat Pull Down", "Seated Closed Grip Row", "Dumbell Curl", "Seated Bicep Curl", "Hammer Dumbell Curl", "EZ Barbell Curl"], "TUE": ["Seated Incline Machine Press", "Tricep Dips", "Closed Grip EZ Bar Cable Pushdown", "Wide Grip EZ Bar Cable Pushdown", "Seated Tricep Extension"], "WED": ["Smith Machine Squat", "Dumbell Lunges", "Single Leg Extension", "Seated Hamstring Curl", "Leg Press", "Dumbell Straight Leg Deadlift"], "THU": ["Plate Raises", "Pec Dec Rear Fly", "Dumbell Side Lateral Raise", "Smith Machine Press", "Smith Machine Reverse Shrug", "Cable Rope Face Pull", "Barbell Seated Calf Raise", "Smith Machine Seated Calf Raise", "Standing Barbell Calf Raise"], "FRI": ["Closed Grip Pull Up", "Seated Dumbell Curl", "Smith Machine Drag Curl", "Overhead Cable Extension"], "SUN": ["Leg Extension", "Hamstring Curl", "Smith Machine Standing Calve Raise", "Leg Press", "Lying Hamstring Curl", "Seated Calve Raise", "Lat Pull Down", "Seated Row", "Barbell Shoulder Press", "Dumbell Side Lateral Raise", "Flat Barbell Press", "Cable Fly", "Dumbell Curl", "Machine Preacher Curl", "Tricep Dips", "Rope Cable Pushdown", "Abdominal Weighted Crunch", "Hanging Leg Raise"]}, "16": {"MON": ["Dumbell Shoulder Press", "Lat Pull Down", "Flat Dumbell Press", "Machine Lateral Raise", "Seated Row", "Incline Barbell Press"], "TUE": ["Cable Rear Delt Fly", "Bent Over Barbell Row", "Cable Flyes", "Cable Curl", "Rope Pushdown"], "WED": ["EZ Bar Curl", "Tricep Extension", "Squats", "Leg Press", "Leg Extensions", "Lunges"], "THU": ["Lying Leg Curl", "Seated Hamstring Curl", "Stiff Leg Deadlift", "Lunges", "Seated Calf Raise", "Smith Machine Calf Raises", "Single Leg Calf Raise", "Leg Press Calf Raise"], "SAT": ["Rest Day"], "SUN": ["Rest Day"]}};
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAY_KEYS = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+let entries = [], userSchedule = null;
+let setupWeek = 1, setupDay = 0;
+let currentType = 'strength';
+
+function load() {
+  try { const d = localStorage.getItem('ex_entries_v2'); if(d) entries = JSON.parse(d); } catch(e){}
+  try { const d = localStorage.getItem('ex_schedule_v2'); if(d) userSchedule = JSON.parse(d); } catch(e){}
+  if (!userSchedule) userSchedule = JSON.parse(JSON.stringify(PLAN_SCHEDULE));
+  const idx = todayIndex();
+  const wk = currentPlanWeek();
+  document.getElementById('header-day').textContent = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][idx];
+  document.getElementById('header-week').textContent = 'Wk ' + wk;
+  buildWeekTabs();
+  renderLogTab();
+}
+
+function saveEntries() { try { localStorage.setItem('ex_entries_v2', JSON.stringify(entries)); } catch(e){} }
+function saveSchedule() { try { localStorage.setItem('ex_schedule_v2', JSON.stringify(userSchedule)); } catch(e){} }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function todayIndex() {
+  const d = new Date().getDay();
+  return d === 0 ? 6 : d - 1;
+}
+
+function currentPlanWeek() {
+  try {
+    const stored = localStorage.getItem('plan_start_date');
+    if (!stored) return 1;
+    const start = new Date(stored);
+    const now = new Date();
+    const diff = Math.floor((now - start) / (7 * 24 * 3600 * 1000));
+    return Math.min(Math.max(diff + 1, 1), 16);
+  } catch(e) { return 1; }
+}
+
+function showTab(tab) {
+  ['log','history','schedule'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('nav-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab==='history') renderHistory();
+  if (tab==='schedule') { setupWeek = currentPlanWeek(); setupDay = todayIndex(); renderSetup(); }
+  if (tab==='log') renderLogTab();
+}
+
+// --- LOG ---
+function renderLogTab() {
+  const idx = todayIndex();
+  const wk = currentPlanWeek();
+  const dayKey = DAY_KEYS[idx];
+  const todayEx = (userSchedule[String(wk)] && userSchedule[String(wk)][dayKey]) || [];
+  let html = '';
+  if (todayEx.length) {
+    html += `<p class="section-label">Week ${wk} &mdash; ${DAYS[idx]}</p><div class="chip-grid">`;
+    todayEx.forEach((ex, i) => {
+      const type = typeof ex === 'object' ? ex.type : 'strength';
+      const name = typeof ex === 'object' ? ex.name : ex;
+      html += `<div class="exercise-chip" id="chip-${i}" onclick="selectExercise(${i})">
+        <span class="name">${name}</span>
+        <span class="type-pill ${type}">${type==='bodyweight'?'BW':type==='cardio'?'Cardio':'Wt'}</span>
+      </div>`;
+    });
+    html += '</div><hr class="divider">';
+  } else {
+    html += `<p class="section-label" style="margin-top:4px">Week ${wk} &mdash; ${DAYS[idx]}</p>`;
+  }
+  html += `<p class="section-label">${todayEx.length ? 'Or enter a custom exercise' : 'Exercise name'}</p>
+  <div class="field-group"><input type="text" id="exercise-name" placeholder="Exercise name" autocomplete="off" /></div>
+  <div class="type-tabs">
+    <button class="type-tab active" id="tt-strength" onclick="setType('strength')">Weights</button>
+    <button class="type-tab" id="tt-cardio" onclick="setType('cardio')">Cardio</button>
+    <button class="type-tab" id="tt-bodyweight" onclick="setType('bodyweight')">Bodyweight</button>
+  </div>
+  <div id="strength-fields">
+    <div class="fields-row">
+      <div class="field-group"><label>Sets</label><input type="number" id="sets" min="1" placeholder="4" inputmode="numeric"/></div>
+      <div class="field-group"><label>Reps</label><input type="number" id="reps" min="1" placeholder="12" inputmode="numeric"/></div>
+      <div class="field-group"><label>Weight (kg)</label><input type="number" id="weight" min="0" step="0.5" placeholder="60" inputmode="decimal"/></div>
+    </div>
+  </div>
+  <div id="cardio-fields" style="display:none">
+    <div class="fields-row">
+      <div class="field-group"><label>Dist (km)</label><input type="number" id="distance" min="0" step="0.1" placeholder="5" inputmode="decimal"/></div>
+      <div class="field-group"><label>Dur (min)</label><input type="number" id="duration" min="1" placeholder="30" inputmode="numeric"/></div>
+      <div class="field-group"><label>Pace (min/km)</label><input type="number" id="pace" min="0" step="0.1" placeholder="6" inputmode="decimal"/></div>
+    </div>
+  </div>
+  <div id="bodyweight-fields" style="display:none">
+    <div class="fields-row-2">
+      <div class="field-group"><label>Sets</label><input type="number" id="bw-sets" min="1" placeholder="3" inputmode="numeric"/></div>
+      <div class="field-group"><label>Reps</label><input type="number" id="bw-reps" min="1" placeholder="15" inputmode="numeric"/></div>
+    </div>
+  </div>
+  <div class="field-group"><label>Notes (optional)</label><input type="text" id="notes" placeholder="How did it feel?" autocomplete="off"/></div>
+  <button class="btn btn-primary" onclick="saveEntry()">Save entry</button>`;
+  document.getElementById('log-content').innerHTML = html;
+  currentType = 'strength';
+}
+
+function selectExercise(i) {
+  const idx = todayIndex(), wk = currentPlanWeek();
+  const dayKey = DAY_KEYS[idx];
+  const ex = userSchedule[String(wk)][dayKey][i];
+  const name = typeof ex === 'object' ? ex.name : ex;
+  const type = typeof ex === 'object' ? ex.type : 'strength';
+  document.getElementById('exercise-name').value = name;
+  document.querySelectorAll('.exercise-chip').forEach((c,j) => c.classList.toggle('selected', j===i));
+  setType(type);
+}
+
+function setType(type) {
+  currentType = type;
+  ['strength','cardio','bodyweight'].forEach(t => {
+    const btn = document.getElementById('tt-'+t); if(btn) btn.classList.toggle('active', t===type);
+    const f = document.getElementById(t+'-fields'); if(f) f.style.display = t===type ? '' : 'none';
+  });
+}
+
+function saveEntry() {
+  const name = document.getElementById('exercise-name').value.trim();
+  if(!name) { toast('Enter an exercise name'); return; }
+  const entry = { id: Date.now(), type: currentType, name, date: new Date().toISOString(), notes: document.getElementById('notes').value.trim() };
+  if(currentType==='strength') {
+    const s=document.getElementById('sets').value, r=document.getElementById('reps').value;
+    if(!s||!r) { toast('Enter sets and reps'); return; }
+    entry.sets=parseInt(s); entry.reps=parseInt(r);
+    const w=document.getElementById('weight').value; entry.weight=w?parseFloat(w):null;
+  } else if(currentType==='cardio') {
+    const dist=document.getElementById('distance').value, dur=document.getElementById('duration').value;
+    if(!dist&&!dur) { toast('Enter distance or duration'); return; }
+    entry.distance=dist?parseFloat(dist):null; entry.duration=dur?parseInt(dur):null;
+    const p=document.getElementById('pace').value; entry.pace=p?parseFloat(p):null;
+  } else {
+    const s=document.getElementById('bw-sets').value, r=document.getElementById('bw-reps').value;
+    if(!s||!r) { toast('Enter sets and reps'); return; }
+    entry.sets=parseInt(s); entry.reps=parseInt(r);
+  }
+  entries.unshift(entry);
+  saveEntries();
+  toast('Saved!');
+  renderLogTab();
+}
+
+// --- HISTORY ---
+function fmtDate(iso) { return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtDetail(e) {
+  if(e.type==='strength') { let s=`${e.sets} sets \u00d7 ${e.reps} reps`; if(e.weight) s+=` @ ${e.weight}kg`; return s; }
+  if(e.type==='cardio') { const p=[]; if(e.distance) p.push(`${e.distance}km`); if(e.duration) p.push(`${e.duration} min`); if(e.pace) p.push(`${e.pace} min/km`); return p.join(' \u00b7 '); }
+  return `${e.sets} sets \u00d7 ${e.reps} reps`;
+}
+function deleteEntry(id) { entries=entries.filter(e=>e.id!==id); saveEntries(); renderHistory(); }
+function renderHistory() {
+  const el = document.getElementById('history-content');
+  if(!entries.length) { el.innerHTML='<div class="empty">No entries yet.<br>Log your first workout!</div>'; return; }
+  const grouped={};
+  entries.forEach(e => { const d=fmtDate(e.date); if(!grouped[d]) grouped[d]=[]; grouped[d].push(e); });
+  el.innerHTML = Object.keys(grouped).map(date => `
+    <p class="section-label">${date}</p>
+    ${grouped[date].map(e=>`
+      <div class="log-card">
+        <div class="log-card-header">
+          <div>
+            <span class="type-pill ${e.type}" style="margin-bottom:4px;display:inline-block">${e.type==='bodyweight'?'BW':e.type==='cardio'?'Cardio':'Wt'}</span>
+            <div class="log-card-name">${e.name}</div>
+          </div>
+          <button class="del-btn" onclick="deleteEntry(${e.id})">\u00d7</button>
+        </div>
+        <div class="log-card-detail">${fmtDetail(e)}</div>
+        ${e.notes?`<div class="log-card-note">${e.notes}</div>`:''}
+      </div>`).join('')}
+  `).join('');
+}
+
+// --- SCHEDULE ---
+function buildWeekTabs() {
+  const t1 = document.getElementById('week-tabs-1');
+  const t2 = document.getElementById('week-tabs-2');
+  t1.innerHTML = [1,2,3,4,5,6,7,8].map(w => `<button class="week-tab" onclick="selectWeek(${w})">W${w}</button>`).join('');
+  t2.innerHTML = [9,10,11,12,13,14,15,16].map(w => `<button class="week-tab" onclick="selectWeek(${w})">W${w}</button>`).join('');
+}
+
+function selectWeek(w) {
+  setupWeek = w;
+  document.querySelectorAll('.week-tab').forEach((b,i) => b.classList.toggle('active', i+1===w));
+  renderSetup();
+}
+
+function selectDay(i) {
+  setupDay = i;
+  document.querySelectorAll('.day-tab').forEach((b,j) => b.classList.toggle('active', j===i));
+  renderSetup();
+}
+
+function renderSetup() {
+  // Highlight week tab
+  document.querySelectorAll('.week-tab').forEach((b,i) => b.classList.toggle('active', i+1===setupWeek));
+  // Highlight day tab
+  document.querySelectorAll('.day-tab').forEach((b,j) => b.classList.toggle('active', j===setupDay));
+  document.getElementById('setup-label').textContent = `Week ${setupWeek} ${DAYS[setupDay]}`;
+  const dayKey = DAY_KEYS[setupDay];
+  const list = (userSchedule[String(setupWeek)] && userSchedule[String(setupWeek)][dayKey]) || [];
+  const el = document.getElementById('setup-list');
+  if(!list.length) { el.innerHTML='<div style="font-size:13px;color:var(--text3);margin-bottom:8px">No exercises for this day.</div>'; return; }
+  el.innerHTML = list.map((ex,i) => {
+    const name = typeof ex==='object' ? ex.name : ex;
+    const type = typeof ex==='object' ? ex.type : 'strength';
+    return `<div class="setup-item">
+      <div class="setup-item-left">
+        <span class="type-pill ${type}">${type==='bodyweight'?'BW':type==='cardio'?'C':'Wt'}</span>
+        <span>${name}</span>
+      </div>
+      <button class="del-btn" onclick="removeExercise(${i})">\u00d7</button>
+    </div>`;
+  }).join('');
+}
+
+function addExercise() {
+  const name = document.getElementById('new-ex-name').value.trim();
+  if(!name) { toast('Enter a name'); return; }
+  const type = document.getElementById('new-ex-type').value;
+  const wk = String(setupWeek);
+  if(!userSchedule[wk]) userSchedule[wk] = {};
+  const dayKey = DAY_KEYS[setupDay];
+  if(!userSchedule[wk][dayKey]) userSchedule[wk][dayKey] = [];
+  userSchedule[wk][dayKey].push({name, type});
+  saveSchedule();
+  document.getElementById('new-ex-name').value = '';
+  renderSetup();
+  toast(`Added to Week ${setupWeek} ${DAYS[setupDay]}`);
+}
+
+function removeExercise(i) {
+  const wk = String(setupWeek), dayKey = DAY_KEYS[setupDay];
+  userSchedule[wk][dayKey].splice(i, 1);
+  saveSchedule();
+  renderSetup();
+}
+
+load();
+</script>
+</body>
+</html>
