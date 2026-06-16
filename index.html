@@ -122,6 +122,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .del-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px}
 .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;font-weight:700}
 .empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:14px;line-height:1.6}
+.home-btn{background:rgba(255,255,255,.14);border:none;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.home-btn svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.home-btn:active{background:rgba(255,255,255,.28)}
 .manage-hint{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.4}
 .manage-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;gap:8px}
 .manage-item.removed{opacity:.6}
@@ -143,7 +146,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <div class="hdr">
     <div class="hdr-top">
       <h1>My Training</h1>
-      <span class="hdr-date" id="hdr-date"></span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hdr-date" id="hdr-date"></span>
+        <button class="home-btn" onclick="goHome()" title="Jump to current session">
+          <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21v-6h6v6"/></svg>
+        </button>
+      </div>
     </div>
     <div class="progress-track" id="progress"></div>
   </div>
@@ -159,8 +167,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="modal-sub">Pick any workout — do them in whatever order suits you</div>
     <div class="filter-row">
       <button class="on" id="f-all" onclick="setFilter('all')">All</button>
-      <button id="f-runna" onclick="setFilter('runna')">Runna</button>
-      <button id="f-weights" onclick="setFilter('weights')">Weights</button>
+      <button id="f-runna" onclick="setFilter('runna')">Baalu-Runna</button>
+      <button id="f-weights" onclick="setFilter('weights')">Baalu-Weights</button>
     </div>
     <div id="sess-list"></div>
   </div>
@@ -192,6 +200,7 @@ function runnaLink(name){
 
 let entries = [];
 let wOverrides = {};   // weights session edits keyed by weight-session idx
+let homeIdx = 0;       // the session the user considers 'current'
 let curSeqIdx = 0;          // index into SEQ
 let view = 'log';           // 'log' or 'exercises'
 let liveSession = null;     // working copy of current session with logged data
@@ -202,6 +211,7 @@ function boot(){
   try{ const d=localStorage.getItem('rt_entries'); if(d) entries=JSON.parse(d); }catch(e){}
   try{ const s=localStorage.getItem('rt_seqidx'); if(s!=null) curSeqIdx=parseInt(s)||0; }catch(e){}
   try{ const o=localStorage.getItem('rt_woverrides'); if(o) wOverrides=JSON.parse(o); }catch(e){}
+  try{ const h=localStorage.getItem('rt_homeidx'); if(h!=null) homeIdx=parseInt(h)||0; }catch(e){}
   const now=new Date();
   document.getElementById('hdr-date').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
   buildLiveSession();
@@ -211,6 +221,7 @@ function boot(){
 function saveEntries(){ try{localStorage.setItem('rt_entries',JSON.stringify(entries));}catch(e){} }
 function saveSeq(){ try{localStorage.setItem('rt_seqidx',String(curSeqIdx));}catch(e){} }
 function saveOverrides(){ try{localStorage.setItem('rt_woverrides',JSON.stringify(wOverrides));}catch(e){} }
+function saveHome(){ try{localStorage.setItem('rt_homeidx',String(homeIdx));}catch(e){} }
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
 
@@ -236,7 +247,7 @@ function resolveSession(seqEntry){
 /* build a live working session: for each block, expand into sets with empty logged values */
 function buildLiveSession(){
   const sess=resolveSession(SEQ[curSeqIdx]);
-  liveSession={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, blocks:[]};
+  liveSession={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, blocks:[]};
   sess.blocks.forEach(b=>{
     const sets=[];
     for(let s=0;s<b.sets;s++){
@@ -294,7 +305,7 @@ function renderLog(){
   /* hero card */
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag ${s.kind}">${isRunna?'Runna':'Weights'}</div>
+      <div class="hero-flag ${s.kind}">${isRunna?'Baalu-Runna':'Baalu-Weights'}</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -381,7 +392,7 @@ function renderManage(s){
   // re-render hero + toggle (reuse simple header)
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag weights">Weights</div>
+      <div class="hero-flag weights">Baalu-Weights</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -499,9 +510,14 @@ function finishSession(){
     flatSets:flat
   });
   saveEntries();
+  homeIdx=curSeqIdx; saveHome();
   toast('Workout saved \u2713');
 }
 
+function goHome(){
+  curSeqIdx=homeIdx; saveSeq(); buildLiveSession(); renderProgress(); view='log'; renderLog(); window.scrollTo(0,0);
+  toast('Back to your current session');
+}
 function nextSession(){
   if(curSeqIdx<SEQ.length-1){ curSeqIdx++; saveSeq(); buildLiveSession(); renderProgress(); renderLog(); window.scrollTo(0,0); }
   else toast('That was the last session!');
@@ -532,7 +548,7 @@ function renderSessList(){
         <span class="sess-opt-title">${s.title}</span>
         <span class="sess-opt-sub">${s.subtitle} \u00b7 Session ${i+1}</span>
       </div>
-      <span class="sess-opt-tag ${sq.type}">${sq.type==='runna'?'Runna':'Weights'}</span>
+      <span class="sess-opt-tag ${sq.type}">${sq.type==='runna'?'Baalu-Runna':'Baalu-Weights'}</span>
     </div>`;
   });
   el.innerHTML=html;
@@ -570,7 +586,7 @@ function renderHist(){
           <div><div class="hcard-name">${e.title}</div></div>
           <button class="del-btn" onclick="delEntry(${e.id})">\u00d7</button>
         </div>
-        <div class="hcard-meta">${e.kind==='runna'?'Runna':'Weights'} \u00b7 ${e.subtitle||''}</div>
+        <div class="hcard-meta">${e.kind==='runna'?'Baalu-Runna':'Baalu-Weights'} \u00b7 ${e.subtitle||''}</div>
         ${body}
       </div>`;
     }).join('')}
