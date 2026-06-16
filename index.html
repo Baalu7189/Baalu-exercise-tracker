@@ -125,6 +125,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .home-btn{background:rgba(255,255,255,.14);border:none;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .home-btn svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .home-btn:active{background:rgba(255,255,255,.28)}
+.tstart{height:34px;padding:0 14px;border-radius:9px;border:none;background:var(--green);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-left:2px}
+.tstart:active{transform:scale(.97)}
+.time-ctrl.running{gap:10px}
+.tstop{background:#D6453C;color:#fff;border-color:#D6453C}
+.tpause{background:var(--navy);color:#fff;border-color:var(--navy);font-size:14px}
+.ticking{color:var(--orange)!important;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.exrow.mode-time{grid-template-columns:1fr auto auto}
 .mini-input.wide{width:90px}
 .time-ctrl{display:flex;align-items:center;gap:6px}
 .tstep{width:34px;height:34px;border-radius:9px;border:1px solid var(--border2);background:var(--card);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
@@ -200,6 +208,8 @@ const WS = DATA.weightSessions, RS = DATA.runnaSessions, SEQ = DATA.sequence;
 
 const EX_MODES_DEFAULT = {"Barbell Bench Press":"weight","Barbell Hip Thrust":"weight","Barbell Squat":"weight","Bear Crawl":"time","Bodyweight Squat":"reps","Box Jump":"reps","Box Jump Down to Tuck Jump":"reps","Clam Shells":"reps","Crunch and Press":"reps","Diagonal Toe Tap":"reps","Double Arm Clean":"weight","Double Leg Skipping":"reps","Farmer's Carry":"time","Floating Heel Drop":"reps","Glute Bridge into Hamstring Walkout":"reps","Hanging Knee Raise":"reps","Heel Walks":"time","KB Swings":"weight","Loaded Walking Calf Raises":"reps","Lunge Hold Calf Raise":"time","Lunge and Press":"weight","Mountain Climber":"time","Plank Twist":"time","Pogo Jumps":"reps","Press Up":"reps","Press Up Position Diagonal Toe Tap":"reps","Press Up Position Walk Out":"time","Press-Up Position with Single Arm Extensions":"reps","Push Press":"weight","Reverse Fly":"weight","Reverse Lunge":"reps","Roll Down":"reps","Russian Twist":"reps","Seated Barbell Press":"weight","Short Lever Copenhagen Plank":"time","Side Leg Swings":"reps","Side Lunge":"reps","Side Plank":"time","Side Plank Leg Raise":"time","Side Plank with Hip Flexion":"time","Single Arm Bench Press":"weight","Single Arm Clean":"weight","Single Arm Clean and Press":"weight","Single Arm Row":"weight","Single Leg Calf Raise":"reps","Single Leg Squat":"reps","Single Leg Straight Leg Deadlift with Knee Drive":"weight","Squat to Calf Raise":"reps","Staggered Stance (B-Stance) Hip Thrusts":"weight","Staggered Stance RDLs":"weight","Standing Side Bend":"reps","Standing Side Raise":"weight","Standing Single Arm Shoulder Press":"weight","Static Lunge":"reps","Step Down":"reps","Step Up":"reps","Step Up and Knee Drive":"reps","Sumo Deadlift":"weight","Thruster":"weight","Toe Walks":"time","Travelling Press Up Walk out":"time","Tricep Dip":"reps"};
 let exModeOverrides = {};  // user-chosen mode per exercise name
+let exDurations = {};      // remembered timer duration (secs) per exercise name
+let activeTimer = null;    // {bi,si,xi, remaining, intervalId, total}
 function exMode(name, kind){
   if(exModeOverrides[name]) return exModeOverrides[name];
   if(EX_MODES_DEFAULT[name]) return EX_MODES_DEFAULT[name];
@@ -208,6 +218,8 @@ function exMode(name, kind){
 }
 function setExMode(name, mode){ exModeOverrides[name]=mode; saveModeOv(); buildLiveSession(); renderLog(); }
 function saveModeOv(){ try{localStorage.setItem('rt_modeov',JSON.stringify(exModeOverrides));}catch(e){} }
+function saveDurations(){ try{localStorage.setItem('rt_durations',JSON.stringify(exDurations));}catch(e){} }
+function defaultDur(name){ return exDurations[name]!=null ? exDurations[name] : 30; }
 
 
 const RUNNA_VIDEOS = {"Clam Shells": "https://www.youtube.com/watch?v=kO2Me7E83DQ"};
@@ -234,6 +246,7 @@ function boot(){
   try{ const o=localStorage.getItem('rt_woverrides'); if(o) wOverrides=JSON.parse(o); }catch(e){}
   try{ const h=localStorage.getItem('rt_homeidx'); if(h!=null) homeIdx=parseInt(h)||0; }catch(e){}
   try{ const mo=localStorage.getItem('rt_modeov'); if(mo) exModeOverrides=JSON.parse(mo); }catch(e){}
+  try{ const du=localStorage.getItem('rt_durations'); if(du) exDurations=JSON.parse(du); }catch(e){}
   const now=new Date();
   document.getElementById('hdr-date').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
   buildLiveSession();
@@ -273,7 +286,10 @@ function buildLiveSession(){
   sess.blocks.forEach(b=>{
     const sets=[];
     for(let s=0;s<b.sets;s++){
-      sets.push(b.exercises.map(name=>({name, reps:'', weight:'', secs:'', done:false})));
+      sets.push(b.exercises.map(name=>{
+        const m=exMode(name, sess.kind);
+        return {name, reps:'', weight:'', secs:(m==='time'?defaultDur(name):''), done:false};
+      }));
     }
     liveSession.blocks.push({sets, exercises:b.exercises.slice()});
   });
@@ -386,12 +402,22 @@ function renderLog(){
           } else if(mode==='reps'){
             fields=`<div class="mini-input wide"><label>Reps</label><input type="number" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}</div></div>`;
           } else {
-            const disp=x.secs!==''&&x.secs!=null?fmtSecs(x.secs):'0:00';
-            fields=`<div class="time-ctrl">
-              <button class="tstep" onclick="bumpSecs(${bi},${si},${xi},-15)">\u2212</button>
-              <div class="time-val"><span>${disp}</span><div class="prev">${prev&&prev.secs?'prev '+fmtSecs(prev.secs):''}</div></div>
-              <button class="tstep" onclick="bumpSecs(${bi},${si},${xi},15)">+</button>
-            </div>`;
+            const running = activeTimer && activeTimer.bi===bi && activeTimer.si===si && activeTimer.xi===xi;
+            const shown = running ? activeTimer.remaining : (x.secs!==''&&x.secs!=null?parseInt(x.secs):defaultDur(x.name));
+            if(running){
+              fields=`<div class="time-ctrl running">
+                <button class="tstep tstop" onclick="event.stopPropagation();stopTimer()">\u25a0</button>
+                <div class="time-val"><span class="ticking" id="tick-${bi}-${si}-${xi}">${fmtSecs(shown)}</span></div>
+                <button class="tstep tpause" onclick="event.stopPropagation();pauseTimer()">${activeTimer.paused?'\u25b6':'\u2225'}</button>
+              </div>`;
+            } else {
+              fields=`<div class="time-ctrl">
+                <button class="tstep" onclick="event.stopPropagation();bumpSecs(${bi},${si},${xi},-15)">\u2212</button>
+                <div class="time-val"><span>${fmtSecs(shown)}</span><div class="prev">${prev&&prev.secs?'prev '+fmtSecs(prev.secs):''}</div></div>
+                <button class="tstep" onclick="event.stopPropagation();bumpSecs(${bi},${si},${xi},15)">+</button>
+                <button class="tstart" onclick="event.stopPropagation();startTimer(${bi},${si},${xi})">Start</button>
+              </div>`;
+            }
           }
           html+=`<div class="exrow mode-${mode}">
             <div class="exrow-name">${exLink}<span class="mode-toggle" onclick="cycleMode('${x.name.replace(/'/g,"\\'")}','${s.kind}')">${modeLabel}</span></div>
@@ -516,10 +542,75 @@ function resetWeightSession(wIdx){
 function fmtSecs(s){ s=parseInt(s)||0; const m=Math.floor(s/60), ss=s%60; return m+':'+(ss<10?'0':'')+ss; }
 function bumpSecs(bi,si,xi,delta){
   const cell=liveSession.blocks[bi].sets[si][xi];
-  let cur=parseInt(cell.secs)||0;
-  cur=Math.max(0, Math.min(cur+delta, 3600));
+  let cur=parseInt(cell.secs)||defaultDur(cell.name);
+  cur=Math.max(5, Math.min(cur+delta, 3600));
   cell.secs=cur;
+  exDurations[cell.name]=cur; saveDurations();   // remember for this exercise
   renderLog();
+}
+
+/* ── Countdown timer engine ── */
+function beep(){
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type='sine'; o.frequency.value=880;
+    g.gain.setValueAtTime(0.001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.4,ctx.currentTime+0.02);
+    o.start();
+    // three short beeps
+    let t=ctx.currentTime;
+    [0,0.25,0.5].forEach(off=>{
+      g.gain.setValueAtTime(0.4,t+off);
+      g.gain.exponentialRampToValueAtTime(0.001,t+off+0.18);
+    });
+    o.stop(ctx.currentTime+0.8);
+  }catch(e){}
+}
+function buzz(){ try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){} }
+
+function startTimer(bi,si,xi){
+  if(activeTimer) stopTimer(true);
+  const cell=liveSession.blocks[bi].sets[si][xi];
+  const total=parseInt(cell.secs)||defaultDur(cell.name);
+  activeTimer={bi,si,xi,total,remaining:total,paused:false,intervalId:null};
+  // remember chosen duration
+  exDurations[cell.name]=total; saveDurations();
+  activeTimer.intervalId=setInterval(tickTimer,1000);
+  renderLog();
+}
+function tickTimer(){
+  if(!activeTimer||activeTimer.paused) return;
+  activeTimer.remaining--;
+  const el=document.getElementById('tick-'+activeTimer.bi+'-'+activeTimer.si+'-'+activeTimer.xi);
+  if(el) el.textContent=fmtSecs(Math.max(activeTimer.remaining,0));
+  if(activeTimer.remaining<=0){
+    finishTimer();
+  }
+}
+function finishTimer(){
+  const {bi,si,xi}=activeTimer;
+  clearInterval(activeTimer.intervalId);
+  beep(); buzz();
+  // auto-tick the set done + record the time
+  const cell=liveSession.blocks[bi].sets[si][xi];
+  cell.done=true;
+  cell.secs=activeTimer.total;
+  activeTimer=null;
+  renderLog();
+  toast('Time! '+cell.name+' done');
+}
+function pauseTimer(){
+  if(!activeTimer) return;
+  activeTimer.paused=!activeTimer.paused;
+  renderLog();
+}
+function stopTimer(silent){
+  if(!activeTimer) return;
+  clearInterval(activeTimer.intervalId);
+  activeTimer=null;
+  if(!silent) renderLog();
 }
 function cycleMode(name, kind){
   const order=['weight','reps','time'];
@@ -565,15 +656,15 @@ function finishSession(){
   toast('Workout saved \u2713');
 }
 
-function goHome(){
+function goHome(){ if(activeTimer) stopTimer(true);
   curSeqIdx=homeIdx; saveSeq(); buildLiveSession(); renderProgress(); view='log'; renderLog(); window.scrollTo(0,0);
   toast('Back to your current session');
 }
-function nextSession(){
+function nextSession(){ if(activeTimer) stopTimer(true);
   if(curSeqIdx<SEQ.length-1){ curSeqIdx++; saveSeq(); buildLiveSession(); renderProgress(); renderLog(); window.scrollTo(0,0); }
   else toast('That was the last session!');
 }
-function prevSession(){
+function prevSession(){ if(activeTimer) stopTimer(true);
   if(curSeqIdx>0){ curSeqIdx--; saveSeq(); buildLiveSession(); renderProgress(); renderLog(); window.scrollTo(0,0); }
   else toast('Already at the first session');
 }
@@ -605,7 +696,7 @@ function renderSessList(){
   el.innerHTML=html;
 }
 
-function jumpTo(i){
+function jumpTo(i){ if(activeTimer) stopTimer(true);
   curSeqIdx=i; saveSeq(); buildLiveSession(); renderProgress(); closeModal(); renderLog(); window.scrollTo(0,0);
 }
 
