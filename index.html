@@ -122,6 +122,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .del-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:18px}
 .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;font-weight:700}
 .empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:14px;line-height:1.6}
+.manage-hint{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.4}
+.manage-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;gap:8px}
+.manage-item.removed{opacity:.6}
+.manage-name{font-size:14px;font-weight:600;flex:1;min-width:0}
+.manage-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.step-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.step-val{font-size:12px;font-weight:600;color:var(--text2);min-width:42px;text-align:center}
+.rm-btn{font-size:12px;font-weight:600;color:#D6453C;background:none;border:1px solid #E7B0AC;border-radius:14px;padding:5px 10px;cursor:pointer}
+.restore-btn{font-size:12px;font-weight:600;color:var(--green);background:none;border:1px solid var(--green);border-radius:14px;padding:5px 10px;cursor:pointer}
 .ex-yt{color:var(--text);text-decoration:none;border-bottom:1.5px dotted var(--orange)}
 .ex-yt:active{color:var(--orange)}
 .yt-ic{color:var(--orange);font-size:10px;vertical-align:middle;margin-left:2px}
@@ -173,6 +182,7 @@ const DATA = {"weightSessions":[{"kind":"weights","title":"Week 1 Mon","subtitle
 const WS = DATA.weightSessions, RS = DATA.runnaSessions, SEQ = DATA.sequence;
 
 const RUNNA_VIDEOS = {"Clam Shells": "https://www.youtube.com/watch?v=kO2Me7E83DQ"};
+function openVid(url){ window.open(url,'_blank','noopener'); }
 function runnaLink(name){
   if(RUNNA_VIDEOS[name]) return RUNNA_VIDEOS[name];
   // Runna-scoped YouTube search — reliably surfaces the official Runna demo
@@ -181,6 +191,7 @@ function runnaLink(name){
 
 
 let entries = [];
+let wOverrides = {};   // weights session edits keyed by weight-session idx
 let curSeqIdx = 0;          // index into SEQ
 let view = 'log';           // 'log' or 'exercises'
 let liveSession = null;     // working copy of current session with logged data
@@ -190,6 +201,7 @@ let modalFilter = 'all';
 function boot(){
   try{ const d=localStorage.getItem('rt_entries'); if(d) entries=JSON.parse(d); }catch(e){}
   try{ const s=localStorage.getItem('rt_seqidx'); if(s!=null) curSeqIdx=parseInt(s)||0; }catch(e){}
+  try{ const o=localStorage.getItem('rt_woverrides'); if(o) wOverrides=JSON.parse(o); }catch(e){}
   const now=new Date();
   document.getElementById('hdr-date').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
   buildLiveSession();
@@ -198,6 +210,7 @@ function boot(){
 }
 function saveEntries(){ try{localStorage.setItem('rt_entries',JSON.stringify(entries));}catch(e){} }
 function saveSeq(){ try{localStorage.setItem('rt_seqidx',String(curSeqIdx));}catch(e){} }
+function saveOverrides(){ try{localStorage.setItem('rt_woverrides',JSON.stringify(wOverrides));}catch(e){} }
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
 
@@ -211,7 +224,12 @@ function resolveSession(seqEntry){
     return {kind:'runna', title:r.title, subtitle:r.subtitle, blocks:r.blocks.map(b=>({sets:b.sets, exercises:b.exercises.slice()}))};
   } else {
     const w=WS[seqEntry.idx];
-    return {kind:'weights', title:w.title, subtitle:w.subtitle, blocks:w.exercises.map(n=>({sets:4, exercises:[n]}))};
+    const ov=wOverrides[seqEntry.idx]||{};
+    const removed=ov.removed||[];
+    const setCounts=ov.setCounts||{};
+    const exs=w.exercises.filter(n=>removed.indexOf(n)===-1);
+    return {kind:'weights', title:w.title, subtitle:w.subtitle, wIdx:seqEntry.idx,
+            blocks:exs.map(n=>({sets:(setCounts[n]||4), exercises:[n]}))};
   }
 }
 
@@ -289,16 +307,21 @@ function renderLog(){
   /* toggle */
   html+=`<div class="seg-toggle">
     <button class="${view==='exercises'?'on':''}" onclick="setView('exercises')">Exercises</button>
-    <button class="${view==='log'?'on':''}" onclick="setView('log')">Log</button>
-  </div>`;
+    <button class="${view==='log'?'on':''}" onclick="setView('log')">Log</button>`;
+  if(s.kind==='weights') html+=`<button class="${view==='manage'?'on':''}" onclick="setView('manage')">Manage</button>`;
+  html+=`</div>`;
 
+  if(view==='manage' && s.kind==='weights'){
+    renderManage(s);
+    return;
+  }
   if(view==='exercises'){
     /* read-only list grouped by block */
     s.blocks.forEach((b,bi)=>{
       const isSuper=b.exercises.length>1;
       html+=`<div class="exlist-block">
-        <div class="exlist-title">${b.sets} set${b.sets>1?'s':''}${isSuper?' \u00b7 superset':''}</div>`;
-      b.exercises.forEach(n=>{ const lk=(s.kind==='runna')?`<a class="ex-yt" href="${runnaLink(n)}" target="_blank" rel="noopener">${n} <span class="yt-ic">\u25b6</span></a>`:n; html+=`<div class="exlist-item">${lk}</div>`; });
+        <div class="exlist-title">${b.sets.length} set${b.sets.length>1?'s':''}${isSuper?' \u00b7 superset':''}</div>`;
+      b.exercises.forEach(n=>{ const lk=(s.kind==='runna')?`<span class="ex-yt" onclick="openVid('${runnaLink(n).replace(/'/g,"\\'")}')">${n} <span class="yt-ic">\u25b6</span></span>`:n; html+=`<div class="exlist-item">${lk}</div>`; });
       html+=`</div>`;
     });
   } else {
@@ -308,7 +331,7 @@ function renderLog(){
       html+=`<div class="block">
         <div class="block-hdr">
           <span class="block-title">${b.exercises.length>1?'Superset':b.exercises[0]}</span>
-          <span class="block-badge">${b.sets} SET${b.sets>1?'S':''}</span>
+          <span class="block-badge">${b.sets.length} SET${b.sets.length>1?'S':''}</span>
         </div>`;
 
       b.sets.forEach((setExs,si)=>{
@@ -323,7 +346,7 @@ function renderLog(){
         setExs.forEach((x,xi)=>{
           const prev=prevFor(x.name);
           const prevTxt=prev?`<b>${prev.weight?prev.weight+'kg \u00d7 ':''}${prev.reps||'?'}</b>`:'&nbsp;';
-          const exLink = (s.kind==='runna') ? `<a class="ex-yt" href="${runnaLink(x.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${x.name} <span class="yt-ic">\u25b6</span></a>` : x.name;
+          const exLink = (s.kind==='runna') ? `<span class="ex-yt" onclick="event.stopPropagation();openVid('${runnaLink(x.name).replace(/'/g,"\\'")}')">${x.name} <span class="yt-ic">\u25b6</span></span>` : x.name;
           html+=`<div class="exrow">
             <div class="exrow-name">${exLink}</div>
             <div class="mini-input"><label>Reps</label><input type="number" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}</div></div>
@@ -350,6 +373,99 @@ function renderLog(){
 }
 
 function setView(v){ view=v; renderLog(); }
+
+function renderManage(s){
+  const el=document.getElementById('log-content');
+  const wIdx=s.wIdx;
+  let html='';
+  // re-render hero + toggle (reuse simple header)
+  html+=`<div class="session-hero">
+    <div class="session-hero-tab">
+      <div class="hero-flag weights">Weights</div>
+      <span class="hero-repeat">Session ${curSeqIdx+1}</span>
+    </div>
+    <div class="hero-body">
+      <div style="font-size:17px;font-weight:700;margin-bottom:2px">${s.title}</div>
+      <div class="hero-sub">${s.subtitle}</div>
+      <span class="hero-change" onclick="openModal()">\u21c4 Change session</span>
+    </div>
+  </div>`;
+  html+=`<div class="seg-toggle">
+    <button onclick="setView('exercises')">Exercises</button>
+    <button onclick="setView('log')">Log</button>
+    <button class="on" onclick="setView('manage')">Manage</button>
+  </div>`;
+  html+=`<p class="manage-hint">Remove exercises you don't want, or change the number of sets. Changes apply to this session and are saved.</p>`;
+
+  s.blocks.forEach((b,bi)=>{
+    const name=b.exercises[0];
+    html+=`<div class="manage-item">
+      <div class="manage-name">${name}</div>
+      <div class="manage-ctrl">
+        <button class="step-btn" onclick="changeSets(${wIdx},'${name.replace(/'/g,"\\'")}',-1)">\u2212</button>
+        <span class="step-val">${b.sets.length} set${b.sets.length>1?'s':''}</span>
+        <button class="step-btn" onclick="changeSets(${wIdx},'${name.replace(/'/g,"\\'")}',1)">+</button>
+        <button class="rm-btn" onclick="removeWeightEx(${wIdx},'${name.replace(/'/g,"\\'")}')">Remove</button>
+      </div>
+    </div>`;
+  });
+
+  if(wOverrides[wIdx] && (wOverrides[wIdx].removed||[]).length){
+    html+=`<p class="lbl">Removed</p>`;
+    wOverrides[wIdx].removed.forEach(n=>{
+      html+=`<div class="manage-item removed">
+        <div class="manage-name">${n}</div>
+        <button class="restore-btn" onclick="restoreWeightEx(${wIdx},'${n.replace(/'/g,"\\'")}')">Restore</button>
+      </div>`;
+    });
+  }
+
+  html+=`<button class="btn btn-ghost" style="margin-top:14px" onclick="resetWeightSession(${wIdx})">Reset this session to original</button>`;
+  el.innerHTML=html;
+}
+
+function ensureOv(wIdx){
+  if(!wOverrides[wIdx]) wOverrides[wIdx]={removed:[],setCounts:{}};
+  if(!wOverrides[wIdx].removed) wOverrides[wIdx].removed=[];
+  if(!wOverrides[wIdx].setCounts) wOverrides[wIdx].setCounts={};
+  return wOverrides[wIdx];
+}
+
+function changeSets(wIdx,name,delta){
+  const ov=ensureOv(wIdx);
+  const cur=ov.setCounts[name]||4;
+  const next=Math.min(Math.max(cur+delta,1),10);
+  ov.setCounts[name]=next;
+  saveOverrides();
+  buildLiveSession();
+  renderLog();
+}
+
+function removeWeightEx(wIdx,name){
+  const ov=ensureOv(wIdx);
+  if(ov.removed.indexOf(name)===-1) ov.removed.push(name);
+  saveOverrides();
+  buildLiveSession();
+  renderLog();
+  toast(name+' removed');
+}
+
+function restoreWeightEx(wIdx,name){
+  const ov=ensureOv(wIdx);
+  ov.removed=ov.removed.filter(n=>n!==name);
+  saveOverrides();
+  buildLiveSession();
+  renderLog();
+}
+
+function resetWeightSession(wIdx){
+  delete wOverrides[wIdx];
+  saveOverrides();
+  buildLiveSession();
+  renderLog();
+  toast('Session reset to original');
+}
+
 
 function upd(bi,si,xi,field,val){
   liveSession.blocks[bi].sets[si][xi][field]=val;
