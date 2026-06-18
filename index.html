@@ -142,6 +142,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mode-toggle{display:inline-block;margin-left:8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--orange);background:var(--orange-soft);border-radius:8px;padding:2px 7px;cursor:pointer;vertical-align:middle}
 .exrow.mode-time{grid-template-columns:1fr auto auto}
 .exrow.mode-reps{grid-template-columns:1fr auto auto}
+/* Run tab */
+.run-hero{text-align:center;padding:24px 16px 20px}
+.run-hero-icon{font-size:48px;margin-bottom:10px}
+.run-hero-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.run-hero-sub{font-size:14px;color:var(--text2)}
+.run-env-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.run-env{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);padding:22px 12px;cursor:pointer;text-align:center}
+.run-env:active{transform:scale(.98);border-color:var(--orange)}
+.run-env-ic{font-size:34px;margin-bottom:8px}
+.run-env-t{font-size:16px;font-weight:700;margin-bottom:2px}
+.run-env-s{font-size:11px;color:var(--text2)}
+.run-live{text-align:center;padding:30px 16px}
+.run-env-badge{display:inline-block;font-size:12px;font-weight:700;padding:5px 14px;border-radius:16px;margin-bottom:24px}
+.run-env-badge.outdoor{background:var(--green-bg);color:var(--green)}
+.run-env-badge.indoor{background:var(--orange-soft);color:var(--orange)}
+.run-clock{font-size:60px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
+.run-clock-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+.run-btn-row{display:flex;gap:10px;margin-top:30px}
+.run-pause{background:var(--navy);color:#fff}
+.run-stop{background:#D6453C;color:#fff}
+.run-done-card{padding:20px 16px}
+.run-done-title{font-size:20px;font-weight:700;text-align:center;margin:14px 0 4px}
+.run-summary-time{font-size:44px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums}
+.run-pace-box{display:flex;align-items:center;justify-content:space-between;background:var(--orange-soft);border-radius:12px;padding:14px 16px}
+.run-pace-lbl{font-size:13px;font-weight:600;color:var(--orange)}
+.run-pace-val{font-size:18px;font-weight:800;color:var(--orange)}
 .manage-hint{font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.4}
 .manage-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;gap:8px}
 .manage-item.removed{opacity:.6}
@@ -174,6 +200,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </div>
 
   <div class="tab on" id="tab-log"><div id="log-content"></div></div>
+  <div class="tab" id="tab-run"><div id="run-content"></div></div>
   <div class="tab" id="tab-history"><div id="hist-content"></div></div>
 </div>
 
@@ -194,6 +221,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <nav class="nav">
   <button class="on" id="nav-log" onclick="showTab('log')">
     <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Workout
+  </button>
+  <button id="nav-run" onclick="showTab('run')">
+    <svg viewBox="0 0 24 24"><circle cx="13" cy="4" r="2"/><path d="M5 20l3-5 3 2 1-4"/><path d="M7 10l4-2 3 3 3 1"/><path d="M12 13l1 3 3 3"/></svg>Run
   </button>
   <button id="nav-history" onclick="showTab('history')">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>History
@@ -325,12 +355,13 @@ function renderProgress(){
 
 /* ── tabs ── */
 function showTab(t){
-  ['log','history'].forEach(x=>{
+  ['log','run','history'].forEach(x=>{
     document.getElementById('tab-'+x).classList.toggle('on',x===t);
     document.getElementById('nav-'+x).classList.toggle('on',x===t);
   });
   if(t==='history') renderHist();
   if(t==='log') renderLog();
+  if(t==='run') renderRun();
 }
 
 /* ── LOG (main workout screen) ── */
@@ -712,6 +743,22 @@ function renderHist(){
   el.innerHTML=Object.keys(grouped).map(date=>`
     <p class="lbl">${date}</p>
     ${grouped[date].map(e=>{
+      if(e.kind==='run'){
+        const paceTxt = e.paceSec ? (Math.floor(e.paceSec/60)+':'+((e.paceSec%60)<10?'0':'')+(e.paceSec%60)+' /km') : '';
+        const parts=[];
+        if(e.distance) parts.push(e.distance+' km');
+        parts.push(fmtClock(e.runSecs||0));
+        if(paceTxt) parts.push(paceTxt);
+        return `<div class="hcard">
+          <div class="hcard-hdr">
+            <div><div class="hcard-name">${e.env==='outdoor'?'\u{1F30D}':'\u{1F3E0}'} ${e.title}</div></div>
+            <button class="del-btn" onclick="delEntry(${e.id})">\u00d7</button>
+          </div>
+          <div class="hcard-meta">Run \u00b7 ${e.env==='outdoor'?'Outdoor':'Treadmill'}</div>
+          <div class="hcard-set"><b>${parts.join('  \u00b7  ')}</b></div>
+          ${e.notes?`<div class="hcard-set" style="color:var(--text3)">${e.notes}</div>`:''}
+        </div>`;
+      }
       // group flatSets by exercise name
       const byName={};
       (e.flatSets||[]).forEach(fs=>{ (byName[fs.name]=byName[fs.name]||[]).push(fs); });
@@ -734,6 +781,137 @@ function renderHist(){
       </div>`;
     }).join('')}
   `).join('');
+}
+
+
+/* ════════════════ RUN TAB ════════════════ */
+let runState = {
+  phase: 'setup',    // 'setup' | 'running' | 'done'
+  env: null,         // 'indoor' | 'outdoor'
+  elapsed: 0,        // seconds
+  intervalId: null,
+  paused: false
+};
+
+function renderRun(){
+  const el=document.getElementById('run-content');
+  let html='';
+
+  if(runState.phase==='setup'){
+    html+=`<div class="run-hero">
+      <div class="run-hero-icon">\u{1F3C3}</div>
+      <div class="run-hero-title">Go for a run</div>
+      <div class="run-hero-sub">Where are you running today?</div>
+    </div>`;
+    html+=`<div class="run-env-grid">
+      <button class="run-env" onclick="startRun('outdoor')">
+        <div class="run-env-ic">\u{1F30D}</div>
+        <div class="run-env-t">Outdoor</div>
+        <div class="run-env-s">Road, trail, park</div>
+      </button>
+      <button class="run-env" onclick="startRun('indoor')">
+        <div class="run-env-ic">\u{1F3E0}</div>
+        <div class="run-env-t">Indoor</div>
+        <div class="run-env-s">Treadmill</div>
+      </button>
+    </div>`;
+  } else if(runState.phase==='running'){
+    html+=`<div class="run-live">
+      <div class="run-env-badge ${runState.env}">${runState.env==='outdoor'?'\u{1F30D} Outdoor':'\u{1F3E0} Treadmill'}</div>
+      <div class="run-clock" id="run-clock">${fmtClock(runState.elapsed)}</div>
+      <div class="run-clock-lbl">elapsed time</div>
+      <div class="run-btn-row">
+        <button class="btn run-pause" onclick="pauseRun()">${runState.paused?'\u25b6 Resume':'\u2225 Pause'}</button>
+        <button class="btn run-stop" onclick="stopRun()">\u25a0 Finish</button>
+      </div>
+    </div>`;
+  } else if(runState.phase==='done'){
+    html+=`<div class="run-done-card">
+      <div class="run-env-badge ${runState.env}">${runState.env==='outdoor'?'\u{1F30D} Outdoor':'\u{1F3E0} Treadmill'}</div>
+      <div class="run-done-title">Run complete \u{1F389}</div>
+      <div class="run-summary-time">${fmtClock(runState.elapsed)}</div>
+      <div class="run-clock-lbl" style="margin-bottom:18px">total time</div>
+      <div class="input-wrap" style="margin-bottom:14px">
+        <label>Distance (km)</label>
+        <input type="number" id="run-dist" inputmode="decimal" step="0.01" placeholder="e.g. 5.2" oninput="updatePace()">
+      </div>
+      <div class="run-pace-box" id="run-pace-box">
+        <span class="run-pace-lbl">Pace</span>
+        <span class="run-pace-val" id="run-pace-val">\u2014</span>
+      </div>
+      <div class="input-wrap" style="margin:14px 0">
+        <label>Notes (optional)</label>
+        <input type="text" id="run-notes" placeholder="How did it feel?">
+      </div>
+      <button class="btn btn-orange" onclick="saveRun()">Save run</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="discardRun()">Discard</button>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+function fmtClock(s){
+  s=parseInt(s)||0;
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
+  const mm=(m<10&&h>0?'0':'')+m, sss=(ss<10?'0':'')+ss;
+  return (h>0?h+':':'')+mm+':'+sss;
+}
+
+function startRun(env){
+  runState={phase:'running', env, elapsed:0, intervalId:null, paused:false};
+  runState.intervalId=setInterval(()=>{
+    if(runState.paused) return;
+    runState.elapsed++;
+    const c=document.getElementById('run-clock');
+    if(c) c.textContent=fmtClock(runState.elapsed);
+  },1000);
+  renderRun();
+}
+
+function pauseRun(){ runState.paused=!runState.paused; renderRun(); }
+
+function stopRun(){
+  clearInterval(runState.intervalId);
+  runState.phase='done';
+  renderRun();
+}
+
+function updatePace(){
+  const dist=parseFloat(document.getElementById('run-dist').value);
+  const box=document.getElementById('run-pace-val');
+  if(!dist||dist<=0||!runState.elapsed){ box.textContent='\u2014'; return; }
+  const paceSecPerKm=runState.elapsed/dist;
+  const m=Math.floor(paceSecPerKm/60), s=Math.round(paceSecPerKm%60);
+  box.textContent=m+':'+(s<10?'0':'')+s+' /km';
+}
+
+function saveRun(){
+  const dist=parseFloat(document.getElementById('run-dist').value)||null;
+  const notes=document.getElementById('run-notes').value.trim();
+  let pace=null;
+  if(dist&&runState.elapsed){
+    const p=runState.elapsed/dist; pace=Math.round(p);  // sec per km
+  }
+  entries.unshift({
+    id:Date.now(),
+    title: (runState.env==='outdoor'?'Outdoor Run':'Treadmill Run'),
+    kind:'run',
+    env:runState.env,
+    date:new Date().toISOString(),
+    runSecs:runState.elapsed,
+    distance:dist,
+    paceSec:pace,
+    notes
+  });
+  saveEntries();
+  toast('Run saved \u2713');
+  runState={phase:'setup', env:null, elapsed:0, intervalId:null, paused:false};
+  renderRun();
+}
+
+function discardRun(){
+  runState={phase:'setup', env:null, elapsed:0, intervalId:null, paused:false};
+  renderRun();
 }
 
 boot();
