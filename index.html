@@ -192,6 +192,8 @@ body::after{
 .run-env-badge{display:inline-block;font-size:12px;font-weight:700;padding:5px 14px;border-radius:16px;margin-bottom:24px}
 .run-env-badge.outdoor{background:var(--green-bg);color:var(--green)}
 .run-env-badge.indoor{background:var(--orange-soft);color:var(--orange)}
+.run-env-badge.run{background:var(--green-bg);color:var(--green)}
+.run-env-badge.cycle{background:var(--orange-soft);color:var(--orange)}
 .run-clock{font-size:60px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
 .run-clock-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
 .run-btn-row{display:flex;gap:10px;margin-top:30px}
@@ -225,7 +227,7 @@ body::after{
 <div class="app">
   <div class="hdr">
     <div class="hdr-top">
-      <h1>My Training</h1>
+      <h1>Baalu Fitness Tracker</h1>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hdr-date" id="hdr-date"></span>
         <button class="home-btn" onclick="goHome()" title="Jump to current session">
@@ -247,9 +249,8 @@ body::after{
     <div class="modal-title">Choose a session</div>
     <div class="modal-sub">Pick any workout — do them in whatever order suits you</div>
     <div class="filter-row">
-      <button class="on" id="f-all" onclick="setFilter('all')">All</button>
-      <button id="f-runna" onclick="setFilter('runna')">Baalu-Runna</button>
-      <button id="f-weights" onclick="setFilter('weights')">Baalu-Weights</button>
+      <button class="on" id="f-runna" onclick="setFilter('runna')">Strength Training</button>
+      <button id="f-weights" onclick="setFilter('weights')">Weight Training</button>
     </div>
     <div id="sess-list"></div>
   </div>
@@ -341,7 +342,7 @@ function resolveSession(seqEntry){
     const removed=ov.removed||[];
     const setCounts=ov.setCounts||{};
     const exs=w.exercises.filter(n=>removed.indexOf(n)===-1);
-    return {kind:'weights', title:w.title, subtitle:w.subtitle, wIdx:seqEntry.idx,
+    return {kind:'weights', title:w.subtitle, subtitle:w.title, wIdx:seqEntry.idx,
             blocks:exs.map(n=>({sets:(setCounts[n]||4), exercises:[n]}))};
   }
 }
@@ -411,7 +412,7 @@ function renderLog(){
   /* hero card */
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag ${s.kind}">${isRunna?'Baalu-Runna':'Baalu-Weights'}</div>
+      <div class="hero-flag ${s.kind}">${isRunna?'Strength Training':'Weight Training'}</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -502,8 +503,7 @@ function renderLog(){
     html+=`<div class="save-bar">
       <button class="btn btn-navy" onclick="finishSession()">Save workout</button>
       <div class="btn-row">
-        <button class="btn btn-ghost" onclick="prevSession()">\u2039 Previous</button>
-        <button class="btn btn-orange" onclick="nextSession()">Next session \u203a</button>
+        <button class="btn btn-orange" onclick="openModal()">\u21c4 Change session</button>
       </div>
     </div>`;
   }
@@ -520,7 +520,7 @@ function renderManage(s){
   // re-render hero + toggle (reuse simple header)
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag weights">Baalu-Weights</div>
+      <div class="hero-flag weights">Weight Training</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -738,29 +738,51 @@ function prevSession(){ if(activeTimer) stopTimer(true);
 }
 
 /* ── session picker modal ── */
-function openModal(){ modalFilter='all'; setFilter('all'); document.getElementById('modal').classList.add('show'); }
+function openModal(){
+  const cur=SEQ[curSeqIdx];
+  const startType=(cur&&cur.type)?cur.type:'runna';
+  setFilter(startType);
+  document.getElementById('modal').classList.add('show');
+}
 function closeModal(){ document.getElementById('modal').classList.remove('show'); }
 
 function setFilter(f){
   modalFilter=f;
-  ['all','runna','weights'].forEach(x=>document.getElementById('f-'+x).classList.toggle('on',x===f));
+  ['runna','weights'].forEach(x=>document.getElementById('f-'+x).classList.toggle('on',x===f));
   renderSessList();
 }
 
 function renderSessList(){
   const el=document.getElementById('sess-list');
   let html='';
-  SEQ.forEach((sq,i)=>{
-    if(modalFilter!=='all' && sq.type!==modalFilter) return;
-    const s=resolveSession(sq);
-    html+=`<div class="sess-opt ${i===curSeqIdx?'on':''}" onclick="jumpTo(${i})">
-      <div class="sess-opt-l">
-        <span class="sess-opt-title">${s.title}</span>
-        <span class="sess-opt-sub">${s.subtitle} \u00b7 Session ${i+1}</span>
-      </div>
-      <span class="sess-opt-tag ${sq.type}">${sq.type==='runna'?'Baalu-Runna':'Baalu-Weights'}</span>
-    </div>`;
-  });
+  if(modalFilter==='runna'){
+    // Strength: show each of the 7 unique workouts once, numbered + named.
+    RS.forEach((r,ri)=>{
+      // find the first sequence index whose type is runna and points at this workout
+      const seqIdx=SEQ.findIndex(sq=>sq.type==='runna' && sq.idx===ri);
+      const target=(seqIdx>=0?seqIdx:0);
+      html+=`<div class="sess-opt ${target===curSeqIdx?'on':''}" onclick="jumpTo(${target})">
+        <div class="sess-opt-l">
+          <span class="sess-opt-title">${ri+1}. ${r.title}</span>
+          <span class="sess-opt-sub">Strength workout</span>
+        </div>
+        <span class="sess-opt-tag runna">Strength</span>
+      </div>`;
+    });
+  } else {
+    // Weight: show all distinct weight sessions in order.
+    SEQ.forEach((sq,i)=>{
+      if(sq.type!=='weights') return;
+      const s=resolveSession(sq);
+      html+=`<div class="sess-opt ${i===curSeqIdx?'on':''}" onclick="jumpTo(${i})">
+        <div class="sess-opt-l">
+          <span class="sess-opt-title">${s.title}</span>
+          <span class="sess-opt-sub">${s.subtitle}</span>
+        </div>
+        <span class="sess-opt-tag weights">Weight</span>
+      </div>`;
+    });
+  }
   el.innerHTML=html;
 }
 
@@ -788,10 +810,10 @@ function renderHist(){
         if(paceTxt) parts.push(paceTxt);
         return `<div class="hcard">
           <div class="hcard-hdr">
-            <div><div class="hcard-name">${e.env==='outdoor'?'\u{1F30D}':'\u{1F3E0}'} ${e.title}</div></div>
+            <div><div class="hcard-name">${e.activity==='cycle'?'\u{1F6B4}':'\u{1F3C3}'} ${e.title}</div></div>
             <button class="del-btn" onclick="delEntry(${e.id})">\u00d7</button>
           </div>
-          <div class="hcard-meta">Run \u00b7 ${e.env==='outdoor'?'Outdoor':'Treadmill'}</div>
+          <div class="hcard-meta">${e.activity==='cycle'?'Cycling':'Run'}</div>
           <div class="hcard-set"><b>${parts.join('  \u00b7  ')}</b></div>
           ${e.notes?`<div class="hcard-set" style="color:var(--text3)">${e.notes}</div>`:''}
         </div>`;
@@ -813,7 +835,7 @@ function renderHist(){
           <div><div class="hcard-name">${e.title}</div></div>
           <button class="del-btn" onclick="delEntry(${e.id})">\u00d7</button>
         </div>
-        <div class="hcard-meta">${e.kind==='runna'?'Baalu-Runna':'Baalu-Weights'} \u00b7 ${e.subtitle||''}</div>
+        <div class="hcard-meta">${e.kind==='runna'?'Strength Training':'Weight Training'} \u00b7 ${e.subtitle||''}</div>
         ${body}
       </div>`;
     }).join('')}
@@ -823,8 +845,8 @@ function renderHist(){
 
 /* ════════════════ RUN TAB ════════════════ */
 let runState = {
-  phase: 'setup',    // 'setup' | 'running' | 'done'
-  env: null,         // 'indoor' | 'outdoor'
+  phase: 'setup',    // 'setup' | 'ready' | 'running' | 'done'
+  activity: null,    // 'run' | 'cycle'
   elapsed: 0,        // seconds
   intervalId: null,
   paused: false
@@ -837,34 +859,34 @@ function renderRun(){
   if(runState.phase==='setup'){
     html+=`<div class="run-hero">
       <div class="run-hero-icon">\u{1F3C3}</div>
-      <div class="run-hero-title">Go for a run</div>
-      <div class="run-hero-sub">Where are you running today?</div>
+      <div class="run-hero-title">Cardio</div>
+      <div class="run-hero-sub">What are you doing today?</div>
     </div>`;
     html+=`<div class="run-env-grid">
-      <button class="run-env" onclick="chooseEnv('outdoor')">
-        <div class="run-env-ic">\u{1F30D}</div>
-        <div class="run-env-t">Outdoor</div>
-        <div class="run-env-s">Road, trail, park</div>
+      <button class="run-env" onclick="chooseActivity('run')">
+        <div class="run-env-ic">\u{1F3C3}</div>
+        <div class="run-env-t">Run</div>
+        <div class="run-env-s">Treadmill or outdoor</div>
       </button>
-      <button class="run-env" onclick="chooseEnv('indoor')">
-        <div class="run-env-ic">\u{1F3E0}</div>
-        <div class="run-env-t">Indoor</div>
-        <div class="run-env-s">Treadmill</div>
+      <button class="run-env" onclick="chooseActivity('cycle')">
+        <div class="run-env-ic">\u{1F6B4}</div>
+        <div class="run-env-t">Cycling</div>
+        <div class="run-env-s">Indoor bike</div>
       </button>
     </div>`;
   } else if(runState.phase==='ready'){
     html+=`<div class="run-live">
-      <div class="run-env-badge ${runState.env}">${runState.env==='outdoor'?'\u{1F30D} Outdoor':'\u{1F3E0} Treadmill'}</div>
+      <div class="run-env-badge ${runState.activity}">${actLabel()}</div>
       <div class="run-clock">${fmtClock(0)}</div>
       <div class="run-clock-lbl">ready to start</div>
       <div class="run-btn-row">
-        <button class="btn run-start-big" onclick="beginTimer()">\u25b6 Start run</button>
+        <button class="btn run-start-big" onclick="beginTimer()">\u25b6 Start ${actVerb()}</button>
       </div>
-      <button class="btn btn-ghost" style="margin-top:10px" onclick="discardRun()">Change location</button>
+      <button class="btn btn-ghost" style="margin-top:10px" onclick="discardRun()">Change activity</button>
     </div>`;
   } else if(runState.phase==='running'){
     html+=`<div class="run-live">
-      <div class="run-env-badge ${runState.env}">${runState.env==='outdoor'?'\u{1F30D} Outdoor':'\u{1F3E0} Treadmill'}</div>
+      <div class="run-env-badge ${runState.activity}">${actLabel()}</div>
       <div class="run-clock" id="run-clock">${fmtClock(runState.elapsed)}</div>
       <div class="run-clock-lbl">${runState.paused?'paused':'elapsed time'}</div>
       <div class="run-btn-row">
@@ -875,8 +897,8 @@ function renderRun(){
     </div>`;
   } else if(runState.phase==='done'){
     html+=`<div class="run-done-card">
-      <div class="run-env-badge ${runState.env}">${runState.env==='outdoor'?'\u{1F30D} Outdoor':'\u{1F3E0} Treadmill'}</div>
-      <div class="run-done-title">Run complete \u{1F389}</div>
+      <div class="run-env-badge ${runState.activity}">${actLabel()}</div>
+      <div class="run-done-title">${runState.activity==='cycle'?'Ride':'Run'} complete \u{1F389}</div>
       <div class="run-summary-time">${fmtClock(runState.elapsed)}</div>
       <div class="run-clock-lbl" style="margin-bottom:18px">total time</div>
       <div class="input-wrap" style="margin-bottom:14px">
@@ -898,6 +920,8 @@ function renderRun(){
   el.innerHTML=html;
 }
 
+function actLabel(){ return runState.activity==='cycle' ? '\u{1F6B4} Cycling' : '\u{1F3C3} Run'; }
+function actVerb(){ return runState.activity==='cycle' ? 'ride' : 'run'; }
 function fmtClock(s){
   s=parseInt(s)||0;
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
@@ -905,8 +929,8 @@ function fmtClock(s){
   return (h>0?h+':':'')+mm+':'+sss;
 }
 
-function chooseEnv(env){
-  runState={phase:'ready', env, elapsed:0, intervalId:null, paused:false};
+function chooseActivity(activity){
+  runState={phase:'ready', activity, elapsed:0, intervalId:null, paused:false};
   renderRun();
 }
 function beginTimer(){
@@ -953,9 +977,9 @@ function saveRun(){
   }
   entries.unshift({
     id:Date.now(),
-    title: (runState.env==='outdoor'?'Outdoor Run':'Treadmill Run'),
+    title: (runState.activity==='cycle'?'Cycling':'Run'),
     kind:'run',
-    env:runState.env,
+    activity:runState.activity,
     date:new Date().toISOString(),
     runSecs:runState.elapsed,
     distance:dist,
@@ -964,12 +988,12 @@ function saveRun(){
   });
   saveEntries();
   toast('Run saved \u2713');
-  runState={phase:'setup', env:null, elapsed:0, intervalId:null, paused:false};
+  runState={phase:'setup', activity:null, elapsed:0, intervalId:null, paused:false};
   renderRun();
 }
 
 function discardRun(){
-  runState={phase:'setup', env:null, elapsed:0, intervalId:null, paused:false};
+  runState={phase:'setup', activity:null, elapsed:0, intervalId:null, paused:false};
   renderRun();
 }
 
