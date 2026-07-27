@@ -121,12 +121,18 @@ body::after{
 .set-card.done-collapsed{background:var(--green-bg);cursor:pointer;opacity:.85}
 .set-card.done-collapsed .set-card-top{margin-bottom:0}
 .collapsed-summary{font-size:12px;color:var(--green);font-weight:600}
-.rest-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom));width:calc(100% - 24px);max-width:418px;background:var(--navy);color:#fff;border-radius:14px;display:flex;align-items:center;gap:8px;padding:10px 12px;z-index:120;box-shadow:0 6px 20px rgba(0,0,0,.25)}
-.rest-bar .rest-mid{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.1}
-.rest-lbl{font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.6);font-weight:700}
-.rest-rem{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-.rest-adj{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:12px;font-weight:700;border-radius:9px;padding:9px 10px;cursor:pointer}
-.rest-skip{background:var(--orange);border:none;color:#fff;font-size:12px;font-weight:700;border-radius:9px;padding:9px 12px;cursor:pointer}
+.rest-overlay{position:fixed;inset:0;background:rgba(11,27,63,.72);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+.rest-card{background:var(--navy);color:#fff;border-radius:24px;padding:30px 26px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);border:2px solid var(--orange)}
+.rest-card .rest-lbl{font-size:13px;letter-spacing:.22em;color:var(--orange);font-weight:800;margin-bottom:8px}
+.rest-card .rest-rem{font-size:76px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:22px}
+.rest-controls{display:flex;gap:10px;margin-bottom:14px}
+.rest-adj{flex:1;background:rgba(255,255,255,.14);border:none;color:#fff;font-size:16px;font-weight:700;border-radius:12px;padding:14px 0;cursor:pointer}
+.rest-adj:active{background:rgba(255,255,255,.28)}
+.rest-skip{width:100%;background:var(--orange);border:none;color:#fff;font-size:16px;font-weight:800;border-radius:12px;padding:14px 0;cursor:pointer}
+.rest-skip:active{transform:scale(.98)}
+.screen-flash{position:fixed;inset:0;background:var(--orange);opacity:0;z-index:300;pointer-events:none;transition:opacity .15s}
+.screen-flash.go{animation:flashPulse .85s ease}
+@keyframes flashPulse{0%{opacity:0}15%{opacity:.85}30%{opacity:.1}45%{opacity:.7}60%{opacity:.1}100%{opacity:0}}
 .rest-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;color:var(--navy);font-size:13px;font-weight:600;background:var(--bg);border-top:1px solid var(--border)}
 /* Exercises view (read-only list) */
 .exlist-block{margin-bottom:14px}
@@ -214,6 +220,12 @@ body::after{
 .run-clock{font-size:60px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1}
 .run-clock-lbl{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
 .run-btn-row{display:flex;gap:10px;margin-top:30px}
+.warmup-card{display:flex;align-items:center;gap:12px;background:var(--orange-soft);border:1px solid var(--orange);border-radius:14px;padding:12px 14px;margin:18px 0;cursor:pointer;text-align:left}
+.warmup-card.cooldown{background:var(--c-bg,#E1F5EE);border-color:var(--green)}
+.warmup-ic{font-size:26px}
+.warmup-txt{display:flex;flex-direction:column}
+.warmup-txt b{font-size:14px;color:var(--text)}
+.warmup-txt span{font-size:12px;color:var(--text2)}
 .run-start-big{background:var(--green);color:#fff;font-size:17px;padding:16px}
 .run-start-big:active{transform:scale(.98)}
 .run-pause{background:var(--navy);color:#fff}
@@ -265,6 +277,28 @@ body::after{
 .search-bar{margin-bottom:10px}
 .search-bar input{width:100%;padding:11px 14px;font-size:14px;border:1px solid var(--border2);border-radius:var(--r);background:var(--card);color:var(--text);outline:none}
 .search-bar input:focus{border-color:var(--orange)}
+/* Home dashboard */
+.home-head{padding:8px 2px 16px}
+.home-greeting{font-size:24px;font-weight:800}
+.home-sub{font-size:14px;color:var(--text2);margin-top:2px}
+.home-choose{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.home-pick{border:none;border-radius:var(--rl);padding:20px 14px;text-align:left;cursor:pointer;color:#fff;display:flex;flex-direction:column;gap:4px;min-height:96px;justify-content:flex-end}
+.home-pick.strength{background:linear-gradient(150deg,var(--orange),#e0530c)}
+.home-pick.weight{background:linear-gradient(150deg,var(--navy2),var(--navy))}
+.home-pick-t{font-size:16px;font-weight:800;line-height:1.15}
+.home-pick-s{font-size:11px;opacity:.85}
+.home-stats{display:flex;gap:10px;margin-bottom:6px}
+.home-stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.home-stat b{display:block;font-size:22px;font-weight:800;color:var(--orange)}
+.home-stat span{font-size:10px;color:var(--text2)}
+.home-recent{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px;cursor:pointer}
+.home-recent:active{background:var(--bg2)}
+.home-recent-l{display:flex;flex-direction:column;gap:2px}
+.home-recent-t{font-size:14px;font-weight:600}
+.home-recent-s{font-size:11px;color:var(--text2)}
+.home-recent-go{font-size:22px;color:var(--text3)}
+/* prefilled input hint */
+.mini-input input.prefilled{border-color:var(--orange);border-style:dashed}
 .toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:300}
 .toast.show{opacity:1}
 </style>
@@ -334,7 +368,7 @@ function exMode(name, kind){
   // weights-session exercises default to 'weight'; unknown runna default 'reps'
   return kind==='weights' ? 'weight' : 'reps';
 }
-function setExMode(name, mode){ exModeOverrides[name]=mode; saveModeOv(); buildLiveSession(); renderLog(); }
+function setExMode(name, mode){ exModeOverrides[name]=mode; saveModeOv(); buildLiveSession(true); renderLog(); }
 function saveModeOv(){ try{localStorage.setItem('rt_modeov',JSON.stringify(exModeOverrides));}catch(e){} }
 function saveDurations(){ try{localStorage.setItem('rt_durations',JSON.stringify(exDurations));}catch(e){} }
 function defaultDur(name){ return exDurations[name]!=null ? exDurations[name] : 30; }
@@ -353,7 +387,9 @@ let entries = [];
 let wOverrides = {};   // weights session edits keyed by weight-session idx
 let homeIdx = 0;       // the session the user considers 'current'
 let curSeqIdx = 0;          // index into SEQ
-let view = 'log';           // 'log' or 'exercises'
+let view = 'log';           // 'log' | 'exercises' | 'manage'
+let workoutScreen = 'home'; // 'home' | 'session'
+let prevTab = 'log';
 let liveSession = null;     // working copy of current session with logged data
 let modalFilter = 'all';
 
@@ -399,19 +435,57 @@ function resolveSession(seqEntry){
 }
 
 /* build a live working session: for each block, expand into sets with empty logged values */
-function buildLiveSession(){
+
+/* most recent saved entry for a given session (title+kind) -> map name -> [sets by index] */
+function lastSessionData(title, kind){
+  for(const e of entries){
+    if(e.kind===kind && e.title===title && e.flatSets){
+      const map={};
+      e.flatSets.forEach(fs=>{
+        (map[fs.name]=map[fs.name]||[]).push(fs);
+      });
+      return map;
+    }
+  }
+  return null;
+}
+
+function buildLiveSession(preserve){
+  // preserve: if true, carry over any values already entered in the current liveSession
+  const prevLive = (preserve && liveSession) ? liveSession : null;
   const sess=resolveSession(SEQ[curSeqIdx]);
-  liveSession={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, blocks:[]};
-  sess.blocks.forEach(b=>{
+  const nl={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, blocks:[]};
+  // previous saved values for this exact programme (for pre-fill)
+  const lastData = preserve ? null : lastSessionData(sess.title, sess.kind);
+  sess.blocks.forEach((b,bi)=>{
     const sets=[];
     for(let s=0;s<b.sets;s++){
-      sets.push(b.exercises.map(name=>{
+      sets.push(b.exercises.map((name,xi)=>{
         const m=exMode(name, sess.kind);
+        // 1) recover a currently-typed cell (mode change preservation)
+        let old=null;
+        if(prevLive && prevLive.blocks[bi] && prevLive.blocks[bi].sets[s]){
+          old=prevLive.blocks[bi].sets[s].find(c=>c.name===name)||prevLive.blocks[bi].sets[s][xi];
+        }
+        if(old){
+          const secs = (old.secs!==''&&old.secs!=null) ? old.secs : (m==='time'?defaultDur(name):'');
+          return {name, reps:old.reps!=null?old.reps:'', weight:old.weight!=null?old.weight:'', secs, done:!!old.done};
+        }
+        // 2) pre-fill from last time you did this programme (editable, not marked done)
+        if(lastData && lastData[name] && lastData[name][s]){
+          const p=lastData[name][s];
+          return {name,
+            reps:(p.reps!=null?p.reps:''),
+            weight:(p.weight!=null?p.weight:''),
+            secs:(p.secs!=null?p.secs:(m==='time'?defaultDur(name):'')),
+            done:false, prefilled:true};
+        }
         return {name, reps:'', weight:'', secs:(m==='time'?defaultDur(name):''), done:false};
       }));
     }
-    liveSession.blocks.push({sets, exercises:b.exercises.slice()});
+    nl.blocks.push({sets, exercises:b.exercises.slice()});
   });
+  liveSession=nl;
 }
 
 /* find previous logged values for an exercise (most recent entry) */
@@ -464,14 +538,92 @@ function showTab(t){
     document.getElementById('nav-'+x).classList.toggle('on',x===t);
   });
   if(t==='history') renderHist();
-  if(t==='log') renderLog();
+  if(t==='log'){ if(prevTab!=='log'){ workoutScreen='home'; } renderLog(); }
   if(t==='run') renderRun();
   if(t==='more') renderMore();
+  prevTab=t;
 }
 
 /* ── LOG (main workout screen) ── */
+function goToHome(){ if(restState) endRest(false); if(activeTimer) stopTimer(true); workoutScreen='home'; view='log'; renderLog(); window.scrollTo(0,0); }
+
+function renderHome(el){
+  const stats=computeStats();
+  // recent sessions (non-run) for quick resume
+  const recent=[];
+  const seen=new Set();
+  for(const e of entries){
+    if(e.kind==='run') continue;
+    const key=e.kind+'|'+e.title;
+    if(seen.has(key)) continue;
+    seen.add(key); recent.push(e);
+    if(recent.length>=3) break;
+  }
+  let html='';
+  html+=`<div class="home-head">
+    <div class="home-greeting">Ready to train?</div>
+    <div class="home-sub">Pick a session to begin</div>
+  </div>`;
+
+  // two big choose buttons
+  html+=`<div class="home-choose">
+    <button class="home-pick strength" onclick="openModalType('runna')">
+      <span class="home-pick-t">Strength Training</span>
+      <span class="home-pick-s">Runna workouts</span>
+    </button>
+    <button class="home-pick weight" onclick="openModalType('weights')">
+      <span class="home-pick-t">Weight Training</span>
+      <span class="home-pick-s">16-week plan</span>
+    </button>
+  </div>`;
+
+  // quick stats strip
+  html+=`<div class="home-stats">
+    <div class="home-stat"><b>${stats.weekCount}</b><span>this week</span></div>
+    <div class="home-stat"><b>${stats.streak}</b><span>day streak</span></div>
+    <div class="home-stat"><b>${stats.total}</b><span>total</span></div>
+  </div>`;
+
+  // resume recent
+  if(recent.length){
+    html+=`<p class="lbl">Recent \u2014 tap to repeat</p>`;
+    recent.forEach(e=>{
+      const idx=findSeqIndexFor(e.kind,e.title);
+      html+=`<div class="home-recent" onclick="resumeSession(${idx})">
+        <div class="home-recent-l">
+          <span class="home-recent-t">${e.title}</span>
+          <span class="home-recent-s">${e.kind==='runna'?'Strength':'Weight'} \u00b7 last ${fmtDate(e.date)}</span>
+        </div>
+        <span class="home-recent-go">\u203a</span>
+      </div>`;
+    });
+  }
+  el.innerHTML=html;
+}
+
+/* find the sequence index whose resolved session matches kind+title */
+function findSeqIndexFor(kind,title){
+  for(let i=0;i<SEQ.length;i++){
+    const s=resolveSession(SEQ[i]);
+    if(s.kind===kind && s.title===title) return i;
+  }
+  return curSeqIdx;
+}
+
+function resumeSession(i){
+  curSeqIdx=i; saveSeq(); buildLiveSession(); renderProgress();
+  workoutScreen='session'; view='log'; renderLog(); window.scrollTo(0,0);
+}
+
+/* open the change-session modal pre-filtered to a type (from home) */
+function openModalType(type){
+  setFilter(type);
+  document.getElementById('modal').classList.add('show');
+}
+
 function renderLog(){
   const el=document.getElementById('log-content');
+  if(workoutScreen==='home'){ renderHome(el); return; }
   const s=liveSession;
   const isRunna=s.kind==='runna';
   let html='';
@@ -486,6 +638,7 @@ function renderLog(){
       <div style="font-size:17px;font-weight:700;margin-bottom:2px">${s.title}</div>
       <div class="hero-sub">${s.subtitle}</div>
       <span class="hero-change" onclick="openModal()">\u21c4 Change session</span>
+      <span class="hero-change" style="margin-left:8px" onclick="goToHome()">\u2302 Home</span>
     </div>
   </div>`;
 
@@ -554,14 +707,14 @@ function renderLog(){
               const best=bestFor(x.name);
               const repsPB=(best.reps!=null && x.reps!=='' && parseFloat(x.reps)>=best.reps && parseFloat(x.reps)>0)?' <span class="pb">\u2191PB</span>':'';
               const wtPB=(best.weight!=null && x.weight!=='' && parseFloat(x.weight)>=best.weight && parseFloat(x.weight)>0)?' <span class="pb">\u2191PB</span>':'';
-              fields=`<div class="mini-input"><label>Reps</label><input type="number" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}${repsPB}</div></div>
-            <div class="mini-input"><label>kg</label><input type="number" inputmode="decimal" step="0.5" value="${x.weight}" placeholder="-" oninput="upd(${bi},${si},${xi},'weight',this.value)"><div class="prev">${prev&&prev.weight?'prev '+prev.weight:''}${wtPB}</div></div>`;
+              fields=`<div class="mini-input"><label>Reps</label><input type="number" class="${x.prefilled?'prefilled':''}" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}${repsPB}</div></div>
+            <div class="mini-input"><label>kg</label><input type="number" class="${x.prefilled?'prefilled':''}" inputmode="decimal" step="0.5" value="${x.weight}" placeholder="-" oninput="upd(${bi},${si},${xi},'weight',this.value)"><div class="prev">${prev&&prev.weight?'prev '+prev.weight:''}${wtPB}</div></div>`;
             }
           } else if(mode==='reps'){
             {
               const best=bestFor(x.name);
               const repsPB=(best.reps!=null && x.reps!=='' && parseFloat(x.reps)>=best.reps && parseFloat(x.reps)>0)?' <span class="pb">\u2191PB</span>':'';
-              fields=`<div class="mini-input wide"><label>Reps</label><input type="number" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}${repsPB}</div></div>`;
+              fields=`<div class="mini-input wide"><label>Reps</label><input type="number" class="${x.prefilled?'prefilled':''}" inputmode="numeric" value="${x.reps}" placeholder="-" oninput="upd(${bi},${si},${xi},'reps',this.value)"><div class="prev">${prev&&prev.reps?'prev '+prev.reps:''}${repsPB}</div></div>`;
             }
           } else {
             const running = activeTimer && activeTimer.bi===bi && activeTimer.si===si && activeTimer.xi===xi;
@@ -620,6 +773,7 @@ function renderManage(s){
       <div style="font-size:17px;font-weight:700;margin-bottom:2px">${s.title}</div>
       <div class="hero-sub">${s.subtitle}</div>
       <span class="hero-change" onclick="openModal()">\u21c4 Change session</span>
+      <span class="hero-change" style="margin-left:8px" onclick="goToHome()">\u2302 Home</span>
     </div>
   </div>`;
   html+=`<div class="seg-toggle">
@@ -711,25 +865,57 @@ function bumpSecs(bi,si,xi,delta){
 }
 
 /* ── Countdown timer engine ── */
+let _audioCtx=null;
 function beep(){
   try{
-    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    _audioCtx=_audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const ctx=_audioCtx;
+    if(ctx.state==='suspended') ctx.resume();
     const o=ctx.createOscillator(), g=ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
-    o.type='sine'; o.frequency.value=880;
-    g.gain.setValueAtTime(0.001,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.4,ctx.currentTime+0.02);
-    o.start();
-    // three short beeps
+    o.type='square'; o.frequency.value=880;
     let t=ctx.currentTime;
-    [0,0.25,0.5].forEach(off=>{
-      g.gain.setValueAtTime(0.4,t+off);
-      g.gain.exponentialRampToValueAtTime(0.001,t+off+0.18);
+    g.gain.setValueAtTime(0.0001,t);
+    // five louder beeps
+    [0,0.3,0.6,0.9,1.2].forEach(off=>{
+      g.gain.setValueAtTime(0.0001,t+off);
+      g.gain.exponentialRampToValueAtTime(0.7,t+off+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.24);
     });
-    o.stop(ctx.currentTime+0.8);
+    o.start(t);
+    o.stop(t+1.6);
   }catch(e){}
 }
-function buzz(){ try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){} }
+/* prime audio on first user tap so mobile browsers allow later beeps */
+function primeAudio(){
+  try{
+    _audioCtx=_audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(_audioCtx.state==='suspended') _audioCtx.resume();
+  }catch(e){}
+  document.removeEventListener('touchstart',primeAudio);
+  document.removeEventListener('click',primeAudio);
+}
+document.addEventListener('touchstart',primeAudio,{once:false});
+document.addEventListener('click',primeAudio,{once:false});
+function buzz(pattern){ try{ if(navigator.vibrate) navigator.vibrate(pattern||[200,100,200]); }catch(e){} }
+
+/* ── Screen Wake Lock: keeps screen on while a timer/rest is running ── */
+let _wakeLock=null;
+async function acquireWake(){
+  try{
+    if('wakeLock' in navigator && !_wakeLock){
+      _wakeLock=await navigator.wakeLock.request('screen');
+      _wakeLock.addEventListener('release',()=>{ _wakeLock=null; });
+    }
+  }catch(e){ _wakeLock=null; }
+}
+async function releaseWake(){
+  try{ if(_wakeLock){ await _wakeLock.release(); _wakeLock=null; } }catch(e){ _wakeLock=null; }
+}
+// re-acquire if the user returns to the tab and a timer is still active
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && (activeTimer||restState)) acquireWake();
+});
 
 /* ── Rest timer (between sets) ── */
 let restState=null;  // {remaining, intervalId}
@@ -760,6 +946,7 @@ function maybeStartRest(){
 }
 function startRest(secs){
   if(restState&&restState.intervalId) clearInterval(restState.intervalId);
+  acquireWake();
   restState={remaining:secs, intervalId:null};
   restState.intervalId=setInterval(()=>{
     restState.remaining--;
@@ -772,7 +959,8 @@ function startRest(secs){
 function endRest(alert){
   if(restState&&restState.intervalId) clearInterval(restState.intervalId);
   restState=null;
-  if(alert){ beep(); buzz(); }
+  if(!activeTimer) releaseWake();
+  if(alert){ beep(); buzz([400,120,400,120,400]); flashScreen(); }
   renderRestBar();
 }
 function bumpRest(delta){
@@ -787,14 +975,27 @@ function renderRestBar(){
   if(!bar){
     bar=document.createElement('div');
     bar.id='rest-bar';
-    bar.className='rest-bar';
+    bar.className='rest-overlay';
     document.body.appendChild(bar);
   }
   bar.innerHTML=`
-    <button class="rest-adj" onclick="bumpRest(-15)">\u221215</button>
-    <div class="rest-mid"><span class="rest-lbl">REST</span><span class="rest-rem" id="rest-rem">${fmtSecs(restState.remaining)}</span></div>
-    <button class="rest-adj" onclick="bumpRest(15)">+15</button>
-    <button class="rest-skip" onclick="endRest(false)">Skip</button>`;
+    <div class="rest-card">
+      <div class="rest-lbl">REST</div>
+      <div class="rest-rem" id="rest-rem">${fmtSecs(restState.remaining)}</div>
+      <div class="rest-controls">
+        <button class="rest-adj" onclick="bumpRest(-15)">\u221215s</button>
+        <button class="rest-adj" onclick="bumpRest(15)">+15s</button>
+      </div>
+      <button class="rest-skip" onclick="endRest(false)">Skip rest \u203a</button>
+    </div>`;
+}
+/* brief full-screen flash to catch your eye when rest ends */
+function flashScreen(){
+  let f=document.createElement('div');
+  f.className='screen-flash';
+  document.body.appendChild(f);
+  setTimeout(()=>{ f.classList.add('go'); },10);
+  setTimeout(()=>{ f.remove(); },900);
 }
 
 
@@ -805,6 +1006,7 @@ function startTimer(bi,si,xi){
   activeTimer={bi,si,xi,total,remaining:total,paused:false,intervalId:null};
   // remember chosen duration
   exDurations[cell.name]=total; saveDurations();
+  acquireWake();
   activeTimer.intervalId=setInterval(tickTimer,1000);
   renderLog();
 }
@@ -820,14 +1022,17 @@ function tickTimer(){
 function finishTimer(){
   const {bi,si,xi}=activeTimer;
   clearInterval(activeTimer.intervalId);
-  beep(); buzz();
+  beep(); buzz([400,120,400,120,400]);
   // auto-tick the set done + record the time
   const cell=liveSession.blocks[bi].sets[si][xi];
   cell.done=true;
   cell.secs=activeTimer.total;
   activeTimer=null;
+  if(!restState) releaseWake();
   renderLog();
   toast('Time! '+cell.name+' done');
+  // roll straight into a rest timer if enabled
+  maybeStartRest();
 }
 function pauseTimer(){
   if(!activeTimer) return;
@@ -849,7 +1054,9 @@ function cycleMode(name, kind){
 }
 
 function upd(bi,si,xi,field,val){
-  liveSession.blocks[bi].sets[si][xi][field]=val;
+  const cell=liveSession.blocks[bi].sets[si][xi];
+  cell[field]=val;
+  cell.prefilled=false;
 }
 
 function toggleDone(bi,si,xi){
@@ -890,6 +1097,9 @@ function finishSession(){
   saveEntries();
   homeIdx=curSeqIdx; saveHome();
   toast('Workout saved \u2713');
+  workoutScreen='home';
+  renderLog();
+  window.scrollTo(0,0);
 }
 
 function goHome(){ if(restState) endRest(false); if(activeTimer) stopTimer(true);
@@ -954,7 +1164,7 @@ function renderSessList(){
   el.innerHTML=html;
 }
 
-function jumpTo(i){ if(restState) endRest(false); if(activeTimer) stopTimer(true);
+function jumpTo(i){ if(restState) endRest(false); if(activeTimer) stopTimer(true); workoutScreen='session';
   curSeqIdx=i; saveSeq(); buildLiveSession(); renderProgress(); closeModal(); renderLog(); window.scrollTo(0,0);
 }
 
@@ -1120,6 +1330,10 @@ function renderRun(){
       <div class="run-env-badge ${runState.activity}">${actLabel()}</div>
       <div class="run-clock">${fmtClock(0)}</div>
       <div class="run-clock-lbl">ready to start</div>
+      <div class="warmup-card" onclick="openVid('${warmupLink()}')">
+        <div class="warmup-ic">\u{1F525}</div>
+        <div class="warmup-txt"><b>Warm-up first</b><span>Runna warm-up routine \u203a</span></div>
+      </div>
       <div class="run-btn-row">
         <button class="btn run-start-big" onclick="beginTimer()">\u25b6 Start ${actVerb()}</button>
       </div>
@@ -1154,7 +1368,11 @@ function renderRun(){
         <label>Notes (optional)</label>
         <input type="text" id="run-notes" placeholder="How did it feel?">
       </div>
-      <button class="btn btn-orange" onclick="saveRun()">Save run</button>
+      <div class="warmup-card cooldown" onclick="openVid('${cooldownLink()}')">
+        <div class="warmup-ic">\u{1F9CA}</div>
+        <div class="warmup-txt"><b>Cool down</b><span>Runna stretch &amp; cool-down \u203a</span></div>
+      </div>
+      <button class="btn btn-orange" onclick="saveRun()">Save ${runState.activity==='cycle'?'ride':'run'}</button>
       <button class="btn btn-ghost" style="margin-top:10px" onclick="discardRun()">Discard</button>
     </div>`;
   }
@@ -1163,6 +1381,8 @@ function renderRun(){
 
 function actLabel(){ return runState.activity==='cycle' ? '\u{1F6B4} Cycling' : '\u{1F3C3} Run'; }
 function actVerb(){ return runState.activity==='cycle' ? 'ride' : 'run'; }
+function warmupLink(){ return 'https://www.youtube.com/results?search_query='+encodeURIComponent('Runna running warm up routine'); }
+function cooldownLink(){ return 'https://www.youtube.com/results?search_query='+encodeURIComponent('Runna cool down stretch after run'); }
 function fmtClock(s){
   s=parseInt(s)||0;
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), ss=s%60;
