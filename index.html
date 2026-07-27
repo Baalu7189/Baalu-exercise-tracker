@@ -322,6 +322,7 @@ body::after{
   <div class="tab" id="tab-run"><div id="run-content"></div></div>
   <div class="tab" id="tab-history"><div id="hist-content"></div></div>
   <div class="tab" id="tab-more"><div id="more-content"></div></div>
+  <div class="tab" id="tab-marathon"><div id="marathon-content"></div></div>
 </div>
 
 <!-- Session picker -->
@@ -349,6 +350,9 @@ body::after{
   </button>
   <button id="nav-more" onclick="showTab('more')">
     <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More
+  </button>
+  <button id="nav-marathon" onclick="showTab('marathon')">
+    <svg viewBox="0 0 24 24"><path d="M4 21V4"/><path d="M4 4h13l-2 3.5L17 11H4"/></svg>Marathon
   </button>
 </nav>
 
@@ -533,7 +537,7 @@ function renderProgress(){
 
 /* ── tabs ── */
 function showTab(t){
-  ['log','run','history','more'].forEach(x=>{
+  ['log','run','history','more','marathon'].forEach(x=>{
     document.getElementById('tab-'+x).classList.toggle('on',x===t);
     document.getElementById('nav-'+x).classList.toggle('on',x===t);
   });
@@ -541,6 +545,7 @@ function showTab(t){
   if(t==='log'){ if(prevTab!=='log'){ workoutScreen='home'; } renderLog(); }
   if(t==='run') renderRun();
   if(t==='more') renderMore();
+  if(t==='marathon') renderMarathon();
   prevTab=t;
 }
 
@@ -1630,6 +1635,360 @@ function calcPlates(){
 
 
 boot();
+</script>
+<script>
+/* ================= BAALU MARATHON PREP =================
+   Self-contained. Own localStorage key (rt_marathon).
+   Core plan = runs + two lifts. Swim/cycle optional (never counted).
+   v3 adds run logging: distance + time -> pace + treadmill speed. */
+(function(){
+  var css = `
+  .mar-wrap{padding-bottom:8px}
+  .mar-hero{background:var(--navy);color:#fff;border-radius:var(--rl);padding:18px 18px 16px;margin-bottom:14px}
+  .mar-hero h2{font-size:19px;font-weight:800;letter-spacing:.2px}
+  .mar-hero .mar-sub{font-size:12px;color:#c7d0e6;margin-top:3px}
+  .mar-stats{display:flex;gap:10px;margin-top:14px}
+  .mar-stat{flex:1;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 8px;text-align:center}
+  .mar-stat b{display:block;font-size:19px;font-weight:800;color:var(--orange)}
+  .mar-stat span{font-size:10px;color:#c7d0e6;text-transform:uppercase;letter-spacing:.4px}
+  .mar-progress{height:6px;border-radius:6px;background:rgba(255,255,255,.15);margin-top:14px;overflow:hidden}
+  .mar-progress i{display:block;height:100%;background:var(--orange);border-radius:6px;transition:width .3s}
+  .mar-pcap{font-size:11px;color:#c7d0e6;margin-top:6px;text-align:right}
+  .mar-ref{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+  .mar-ref summary{cursor:pointer;list-style:none;padding:13px 14px;font-size:13px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center}
+  .mar-ref summary::-webkit-details-marker{display:none}
+  .mar-ref summary .mar-chev{color:var(--text3);font-size:12px;transition:transform .2s}
+  .mar-ref[open] summary .mar-chev{transform:rotate(90deg)}
+  .mar-ref-body{padding:0 14px 14px;font-size:12px;color:var(--text2);line-height:1.5}
+  .mar-ref-body h4{font-size:12px;font-weight:800;color:var(--text);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
+  .mar-ref-body ul{margin:0 0 4px;padding-left:16px}
+  .mar-ref-body li{margin:2px 0}
+  .mar-ref-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:var(--text3)}
+  .mar-pace-tbl{width:100%;border-collapse:collapse;margin-top:2px}
+  .mar-pace-tbl td{padding:6px 4px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+  .mar-pace-tbl td:first-child{color:var(--text);font-weight:700}
+  .mar-pace-tbl td:nth-child(2){color:var(--text2);text-align:right;white-space:nowrap}
+  .mar-pace-tbl tr:last-child td{border-bottom:none}
+  .mar-legend{font-size:11px;color:var(--text3);margin:8px 4px 14px;line-height:1.5}
+  .mar-wk{margin:16px 0 8px;font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:flex;justify-content:space-between;align-items:center}
+  .mar-wk .mar-wk-km{color:var(--text3);font-weight:700}
+  .mar-day{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
+  .mar-day.today{border-color:var(--orange);box-shadow:0 0 0 2px var(--orange-soft)}
+  .mar-day.done{opacity:.72}
+  .mar-day.rest{opacity:.85}
+  .mar-date{flex:0 0 44px;text-align:center}
+  .mar-date .mar-dow{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase}
+  .mar-date .mar-dnum{font-size:15px;font-weight:800;color:var(--text)}
+  .mar-body{flex:1;min-width:0}
+  .mar-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.25}
+  .mar-detail{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.35}
+  .mar-makeup{font-size:12px;color:var(--orange);font-weight:700;margin-top:5px;line-height:1.35}
+  .mar-note{font-size:11px;color:var(--text3);margin-top:4px;font-style:italic}
+  .mar-tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
+  .mar-tag.peak{background:var(--orange-soft);color:var(--orange)}
+  .mar-tag.cutback{background:var(--green-bg);color:var(--green)}
+  .mar-tag.taper{background:rgba(11,27,63,.08);color:var(--navy)}
+  :root[data-theme="dark"] .mar-tag.taper{background:rgba(255,255,255,.1);color:#c7d0e6}
+  .mar-opt{margin-top:8px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 11px 5px 8px;cursor:pointer}
+  .mar-opt .mar-optbox{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center}
+  .mar-opt .mar-optbox svg{width:11px;height:11px;stroke:transparent;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .mar-opt.on{color:var(--green);border-color:var(--green)}
+  .mar-opt.on .mar-optbox{background:var(--green);border-color:var(--green)}
+  .mar-opt.on .mar-optbox svg{stroke:#fff}
+  .mar-logbtn{margin-top:8px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--orange);background:var(--orange-soft);border:none;border-radius:16px;padding:6px 12px;cursor:pointer}
+  .mar-logged{margin-top:7px;font-size:12px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:7px 10px;line-height:1.4}
+  .mar-logged .mar-edit{color:var(--text2);font-weight:600;margin-left:8px;text-decoration:underline;cursor:pointer;font-size:11px}
+  .mar-logform{margin-top:9px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px}
+  .mar-logrow{display:flex;gap:8px}
+  .mar-logrow label{flex:1;font-size:11px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;gap:4px}
+  .mar-logrow input{border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:15px;background:var(--card);color:var(--text);width:100%}
+  .mar-prev{margin-top:9px;font-size:13px;font-weight:800;color:var(--text)}
+  .mar-logbtns{margin-top:10px;display:flex;gap:8px}
+  .mar-logbtns button{flex:1;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer}
+  .mar-logbtns .mar-save{background:var(--orange);color:#fff}
+  .mar-logbtns .mar-cancel{background:var(--card);color:var(--text2);border:1px solid var(--border2)}
+  .mar-acts{flex:0 0 auto;display:flex;flex-direction:column;gap:6px}
+  .mar-btn{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .mar-btn svg{width:18px;height:18px;stroke:var(--text3);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .mar-btn.done.on{background:var(--green);border-color:var(--green)}
+  .mar-btn.done.on svg{stroke:#fff}
+  .mar-btn.miss.on{background:#E5484D;border-color:#E5484D}
+  .mar-btn.miss.on svg{stroke:#fff}
+  .mar-race{background:linear-gradient(150deg,var(--orange),#d8560f);color:#fff;border-color:transparent}
+  .mar-race .mar-title,.mar-race .mar-detail{color:#fff}
+  .mar-race .mar-date .mar-dow,.mar-race .mar-date .mar-dnum{color:#fff}
+  `;
+  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
+
+  var RACE=new Date(2026,9,4);
+  var openLog=null; /* iso of day whose log form is open (in-memory) */
+
+  function pad(n){return (n<10?'0':'')+n;}
+  function isoOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+  function loadComp(){
+    try{
+      var v=JSON.parse(localStorage.getItem('rt_marathon')||'{}');
+      if(v && (v.p || v.o || v.log)) return {p:v.p||{}, o:v.o||{}, log:v.log||{}};
+      return {p:v||{}, o:{}, log:{}}; /* migrate old flat format */
+    }catch(e){ return {p:{},o:{},log:{}}; }
+  }
+  function saveComp(c){ try{localStorage.setItem('rt_marathon',JSON.stringify(c));}catch(e){} }
+
+  /* time helpers */
+  function parseTime(str){
+    if(str==null) return NaN;
+    str=(''+str).trim(); if(!str) return NaN;
+    if(str.indexOf(':')>=0){ var a=str.split(':'); var mm=parseFloat(a[0])||0; var ss=parseFloat(a[1])||0; return mm*60+ss; }
+    var f=parseFloat(str); return isNaN(f)?NaN:f*60; /* plain number = minutes */
+  }
+  function fmtPace(secPerKm){
+    var m=Math.floor(secPerKm/60), s=Math.round(secPerKm-m*60);
+    if(s===60){m++;s=0;} return m+':'+pad(s);
+  }
+  function calcLine(km,timeStr){
+    var sec=parseTime(timeStr);
+    if(!(km>0) || !(sec>0)) return null;
+    var pace=sec/km, speed=km/(sec/3600);
+    return {pace:fmtPace(pace), speed:speed.toFixed(1)};
+  }
+
+  function marPlan(){
+    var anchor=new Date(2026,6,27), start=new Date(2026,6,28), end=new Date(2026,9,4);
+    var q={1:'4 km easy tempo',2:'5 km, last 2 km @ 5:45/km',3:'6 km, 3\u00d71 km @ 5:40/km',4:'5 km easy',5:'6 km, 4\u00d71 km @ 5:40/km',6:'7 km, last 3 km @ goal',7:'6 km steady',8:'6 km, 3\u00d71.5 km @ goal',9:'5 km, last 3 km @ goal',10:'4 km easy'};
+    var qd={1:'Relaxed tempo, ~6:30/km (9.2 km/h)',2:'Easy ~8.5 km/h, last 2 km at 5:45/km (10.4 km/h)',3:'3 reps of 1 km at 5:40/km (10.6 km/h), easy jog between',4:'Easy, 7:00/km (8.6 km/h)',5:'4 reps of 1 km at 5:40/km (10.6 km/h), easy jog between',6:'Last 3 km at goal 5:41/km (10.5 km/h), rest easy',7:'Steady, ~6:30/km (9.2 km/h)',8:'3 reps of 1.5 km at goal 5:41/km (10.5 km/h), easy jog between',9:'Last 3 km at goal 5:41/km (10.5 km/h)',10:'Easy shakeout, 7:00/km (8.6 km/h)'};
+    var e={1:'5 km easy',2:'5 km easy',3:'5 km easy',4:'5 km easy',5:'6 km easy',6:'6 km easy',7:'6 km easy',8:'5 km easy',9:'5 km easy',10:'3 km shakeout'};
+    var lo={1:8,2:10,3:12,4:9,5:14,6:16,7:18,8:13,9:10};
+    var loTag={4:'cutback',7:'peak',8:'cutback',9:'taper'};
+    var swimOpt={label:'Swim lesson',note:'optional, no need to count it while learning'};
+    var days=[];
+    for(var d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
+      var dt=new Date(d);
+      var wk=Math.floor(Math.round((dt-anchor)/86400000)/7)+1;
+      var dow=dt.getDay();
+      var cat='rest',title='Rest day',detail='',tag='',opt=null;
+      if(dow===1){ if(wk===10){cat='rest';title='Rest day';detail='Race week, keep it very easy';opt=swimOpt;} else {cat='lift';title='Lift A, full body';detail='Push and squat, ~40 min. Exercises up top';opt=swimOpt;} }
+      else if(dow===2){ cat='quality'; title=q[wk]; detail=qd[wk]; }
+      else if(dow===3){ cat='rest'; title='Rest day'; if(wk===6||wk===7){detail='Skip cycling this week, protect the long run';} else {detail='Easy day';opt={label:'Indoor cycle 45 min',note:'optional, only if you go'};} }
+      else if(dow===4){ cat='easy'; if(wk===10){title=e[wk];detail='Easy shakeout, ~8.5 km/h. No lift, race week';} else {title=e[wk]+' + Lift B';detail='Easy 7:00 to 7:15/km (8.3 to 8.6 km/h), then Lift B';} }
+      else if(dow===5){ cat='rest'; title='Rest day'; detail='Set up tomorrow\u2019s long run'; }
+      else if(dow===6){ if(wk===10){cat='rest';title='Rest, pre-race';detail='Legs fresh. Hydrate, carbs, early night';} else {cat='long';title='Long run '+lo[wk]+' km';detail='Slow, 7:00 to 7:15/km (8.3 to 8.6 km/h). Time on feet';tag=loTag[wk]||'';} }
+      else if(dow===0){ if(wk===10){cat='race';title='RACE, Half Marathon 21.1 km';detail='Goal 5:41/km (10.5-10.6 km/h). Start easy, ~6:00/km first km';} else {cat='rest';title='Rest day';detail='Optional gentle walk';} }
+      days.push({dt:dt,iso:isoOf(dt),dow:dow,wk:wk,cat:cat,title:title,detail:detail,tag:tag,opt:opt});
+    }
+    return days;
+  }
+
+  var PRIO={long:3,quality:2,easy:1};
+  function isRun(c){return c==='long'||c==='quality'||c==='easy';}
+  function loggable(c){return isRun(c)||c==='race';}
+
+  /* resolve the effective title + week for a given day (handles make-up hosts) */
+  function marDayInfo(iso){
+    var days=compute(loadComp());
+    for(var i=0;i<days.length;i++){
+      if(days[i].iso===iso){
+        var d=days[i];
+        var t=(d.makeup && d.cat==='rest') ? (d.makeup.label+' (make-up)') : d.title;
+        return {wk:d.wk, logTitle:t};
+      }
+    }
+    return {wk:0, logTitle:'Run'};
+  }
+
+  /* mirror a logged marathon run into the shared History (rt_entries) so it
+     persists alongside all other workouts and is never lost. Tagged mar:iso. */
+  function marMirror(iso,title,km,timeStr,wk){
+    if(typeof entries==='undefined') return;
+    var sec=parseTime(timeStr);
+    var pace=(km>0 && sec>0)?Math.round(sec/km):null;
+    var entry={
+      id:parseInt(iso.replace(/-/g,''),10),
+      title:title, kind:'run', activity:'run',
+      date:new Date(iso+'T12:00:00').toISOString(),
+      runSecs:sec>0?Math.round(sec):0,
+      distance:km>0?km:null,
+      paceSec:pace,
+      notes:'Marathon prep'+(wk?(' \u00b7 Week '+wk):''),
+      mar:iso
+    };
+    var idx=-1;
+    for(var i=0;i<entries.length;i++){ if(entries[i].mar===iso){ idx=i; break; } }
+    if(idx>=0) entries[idx]=entry; else entries.unshift(entry);
+    try{ saveEntries(); }catch(e){}
+  }
+  function marUnmirror(iso){
+    if(typeof entries==='undefined') return;
+    for(var i=0;i<entries.length;i++){ if(entries[i].mar===iso){ entries.splice(i,1); break; } }
+    try{ saveEntries(); }catch(e){}
+  }
+
+  function compute(comp){
+    var days=marPlan(), carry=null;
+    for(var i=0;i<days.length;i++){
+      var day=days[i];
+      day.status=comp.p[day.iso]||null;
+      day.optDone=!!comp.o[day.iso];
+      day.log=comp.log[day.iso]||null;
+      if(carry){
+        if(day.cat==='long'||day.cat==='quality'||day.cat==='race'){ day.carryDropped=carry; }
+        else { day.makeup=carry; if(carry.priority===3 && day.cat==='easy') day.replaced=true; }
+        carry=null;
+      }
+      if(day.status==='missed' && isRun(day.cat)){ carry={label:day.title,fromDow:day.dow,priority:PRIO[day.cat]}; day.carried=true; }
+    }
+    return days;
+  }
+
+  window.marToggle=function(iso,val){
+    var c=loadComp();
+    if(c.p[iso]===val){ delete c.p[iso]; } else { c.p[iso]=val; }
+    saveComp(c); renderMarathon();
+  };
+  window.marToggleOpt=function(iso){
+    var c=loadComp();
+    if(c.o[iso]){ delete c.o[iso]; } else { c.o[iso]=1; }
+    saveComp(c); renderMarathon();
+  };
+  window.marOpenLog=function(iso){ openLog=iso; renderMarathon(); };
+  window.marCancelLog=function(){ openLog=null; renderMarathon(); };
+  window.marPreview=function(iso){
+    var km=parseFloat(document.getElementById('mar-km-'+iso).value);
+    var t=document.getElementById('mar-time-'+iso).value;
+    var r=calcLine(km,t);
+    document.getElementById('mar-prev-'+iso).textContent = r ? ('Pace '+r.pace+' /km  \u00b7  '+r.speed+' km/h') : 'Enter distance and time to see your pace';
+  };
+  window.marSaveLog=function(iso){
+    var km=parseFloat(document.getElementById('mar-km-'+iso).value);
+    var t=(document.getElementById('mar-time-'+iso).value||'').trim();
+    var c=loadComp();
+    var info=marDayInfo(iso);
+    if(km>0 && parseTime(t)>0){ c.log[iso]={km:km,time:t}; marMirror(iso,info.logTitle,km,t,info.wk); }
+    c.p[iso]='done';
+    saveComp(c); openLog=null; renderMarathon();
+  };
+  window.marClearLog=function(iso){
+    var c=loadComp(); delete c.log[iso]; saveComp(c); marUnmirror(iso); openLog=null; renderMarathon();
+  };
+
+  window.renderMarathon=function(){
+    var el=document.getElementById('marathon-content'); if(!el) return;
+    var comp=loadComp();
+    var days=compute(comp);
+    var todayIso=isoOf(new Date());
+    var daysLeft=Math.max(0,Math.ceil((RACE-new Date())/86400000));
+
+    var sessions=days.filter(function(d){return d.cat!=='rest';});
+    var scheduledDone=sessions.filter(function(d){return d.status==='done';}).length;
+    var makeupDone=days.filter(function(d){return d.makeup && d.status==='done';}).length;
+    var doneCount=Math.min(sessions.length, scheduledDone+makeupDone);
+    var pct=sessions.length?Math.round(doneCount/sessions.length*100):0;
+    var totalKm=0; Object.keys(comp.log).forEach(function(k){ var v=comp.log[k]; if(v&&v.km>0) totalKm+=v.km; });
+
+    var wdShort=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var html='<div class="mar-wrap">';
+    html+='<div class="mar-hero"><h2>Baalu Marathon Prep</h2>'+
+          '<div class="mar-sub">Half Marathon &middot; Sunday 4 October 2026 &middot; target sub-2:00</div>'+
+          '<div class="mar-stats">'+
+            '<div class="mar-stat"><b>'+daysLeft+'</b><span>days to go</span></div>'+
+            '<div class="mar-stat"><b>'+doneCount+'/'+sessions.length+'</b><span>sessions</span></div>'+
+            '<div class="mar-stat"><b>'+totalKm.toFixed(1)+'</b><span>km logged</span></div>'+
+          '</div>'+
+          '<div class="mar-progress"><i style="width:'+pct+'%"></i></div>'+
+          '<div class="mar-pcap">'+pct+'% of the plan complete</div>'+
+          '</div>';
+
+    /* lift reference */
+    html+='<details class="mar-ref"><summary>Lift A &amp; Lift B exercises <span class="mar-chev">\u25b6</span></summary>'+
+      '<div class="mar-ref-body">'+
+        '<h4>Lift A &middot; push and squat</h4><ul>'+
+          '<li>Goblet or front squat, 3 \u00d7 8</li><li>Incline dumbbell press or push-ups, 3 \u00d7 10</li><li>Dumbbell shoulder press, 3 \u00d7 10</li><li>Lateral raises, 3 \u00d7 15</li><li>Triceps rope pushdown, 3 \u00d7 12</li><li>Plank, 3 \u00d7 45s</li></ul>'+
+        '<h4>Lift B &middot; pull and hinge</h4><ul>'+
+          '<li>Romanian deadlift, light, 3 \u00d7 8</li><li>Pull-ups or lat pulldown, 3 \u00d7 8</li><li>Dumbbell row, 3 \u00d7 10</li><li>Face pulls, 3 \u00d7 15</li><li>Bicep curls, 3 \u00d7 12</li><li>Hanging leg raise, 3 \u00d7 12</li></ul>'+
+        '<div class="mar-ref-note">Keep both light, this is maintenance to hold muscle, not growth. Closest to the app\u2019s Strength Training (Runna) sessions. Save the Weight Training split for the muscle block after the race.</div>'+
+      '</div></details>';
+
+    html+='<div class="mar-legend">Tap the check when done or the cross if missed. On run days use Log run to record distance and time, and it works out your pace and treadmill speed. A missed run carries to the next day unless that day is a key run. Swim and cycle are optional and do not count.</div>';
+
+    var lastWk=0;
+    days.forEach(function(d){
+      if(d.wk!==lastWk){
+        lastWk=d.wk;
+        var wkLong=days.filter(function(x){return x.wk===d.wk && x.cat==='long';})[0];
+        var kmTxt=wkLong?('long '+wkLong.title.replace('Long run ','')) :(d.wk===10?'RACE WEEK':'');
+        html+='<div class="mar-wk"><span>Week '+d.wk+' of 10</span><span class="mar-wk-km">'+kmTxt+'</span></div>';
+      }
+      var cls='mar-day';
+      if(d.iso===todayIso) cls+=' today';
+      if(d.status==='done') cls+=' done';
+      if(d.cat==='rest') cls+=' rest';
+      if(d.cat==='race') cls+=' mar-race';
+
+      var tagHtml=d.tag?(' <span class="mar-tag '+d.tag+'">'+d.tag+'</span>'):'';
+      var body='<div class="mar-title">'+d.title+tagHtml+'</div>';
+      if(d.detail) body+='<div class="mar-detail">'+d.detail+'</div>';
+      if(d.makeup){
+        var moved='Make-up run: '+d.makeup.label+' (moved from '+wdShort[d.makeup.fromDow]+')';
+        body+='<div class="mar-makeup">\u2794 '+moved+(d.replaced?', replaces today\u2019s easy run':'')+'</div>';
+      }
+      if(d.carried) body+='<div class="mar-note">Missed, carried to the next available day.</div>';
+      if(d.carryDropped) body+='<div class="mar-note">A missed run could not move here, tomorrow\u2019s key session takes priority.</div>';
+
+      /* logged summary or log button on run/race days, and make-up hosts */
+      if(loggable(d.cat) || d.makeup){
+        if(d.log){
+          var r=calcLine(d.log.km,d.log.time);
+          var line=d.log.km+' km';
+          if(d.log.time) line+='  \u00b7  '+d.log.time;
+          if(r) line+='  \u00b7  '+r.pace+' /km  \u00b7  '+r.speed+' km/h';
+          body+='<div class="mar-logged">'+line+'<span class="mar-edit" onclick="marOpenLog(\''+d.iso+'\')">edit</span></div>';
+        } else if(openLog!==d.iso){
+          body+='<button class="mar-logbtn" onclick="marOpenLog(\''+d.iso+'\')"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round"><path d="M12 5v14M5 12h14"/></svg>Log run</button>';
+        }
+        if(openLog===d.iso){
+          var pk=d.log?d.log.km:'';
+          var ptv=d.log?(d.log.time||''):'';
+          var prevTxt = d.log ? (calcLine(d.log.km,d.log.time)?('Pace '+calcLine(d.log.km,d.log.time).pace+' /km  \u00b7  '+calcLine(d.log.km,d.log.time).speed+' km/h'):'Enter distance and time to see your pace') : 'Enter distance and time to see your pace';
+          body+='<div class="mar-logform">'+
+            '<div class="mar-logrow">'+
+              '<label>Distance (km)<input id="mar-km-'+d.iso+'" type="number" inputmode="decimal" step="0.01" value="'+pk+'" oninput="marPreview(\''+d.iso+'\')"></label>'+
+              '<label>Time (mm:ss)<input id="mar-time-'+d.iso+'" type="text" inputmode="numeric" placeholder="e.g. 58:30" value="'+ptv+'" oninput="marPreview(\''+d.iso+'\')"></label>'+
+            '</div>'+
+            '<div class="mar-prev" id="mar-prev-'+d.iso+'">'+prevTxt+'</div>'+
+            '<div class="mar-logbtns">'+
+              '<button class="mar-save" onclick="marSaveLog(\''+d.iso+'\')">Save</button>'+
+              (d.log?'<button class="mar-cancel" onclick="marClearLog(\''+d.iso+'\')">Delete</button>':'')+
+              '<button class="mar-cancel" onclick="marCancelLog()">Cancel</button>'+
+            '</div>'+
+          '</div>';
+        }
+      }
+
+      if(d.opt){
+        var onC=d.optDone?' on':'';
+        body+='<div class="mar-opt'+onC+'" onclick="marToggleOpt(\''+d.iso+'\')">'+
+          '<span class="mar-optbox"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+          d.opt.label+' <span style="opacity:.7;font-weight:500">('+d.opt.note+')</span></div>';
+      }
+
+      var acts='';
+      if(d.cat!=='rest' || d.makeup){
+        var doneOn=d.status==='done'?' on':'';
+        var missOn=d.status==='missed'?' on':'';
+        acts='<div class="mar-acts">'+
+          '<button class="mar-btn done'+doneOn+'" onclick="marToggle(\''+d.iso+'\',\'done\')" aria-label="Done"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>'+
+          '<button class="mar-btn miss'+missOn+'" onclick="marToggle(\''+d.iso+'\',\'missed\')" aria-label="Missed"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
+          '</div>';
+      }
+
+      html+='<div class="'+cls+'">'+
+        '<div class="mar-date"><div class="mar-dow">'+wdShort[d.dow]+'</div><div class="mar-dnum">'+d.dt.getDate()+'</div></div>'+
+        '<div class="mar-body">'+body+'</div>'+acts+
+        '</div>';
+    });
+    html+='</div>';
+    el.innerHTML=html;
+  };
+})();
 </script>
 </body>
 </html>
