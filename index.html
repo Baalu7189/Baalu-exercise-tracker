@@ -95,6 +95,9 @@ body::after{
 .block{background:var(--card);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
 .block-hdr{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--bg);border-bottom:1px solid var(--border)}
 .block-title{font-size:13px;font-weight:700;color:var(--text)}
+.block-badge-wrap{display:flex;align-items:center;gap:6px}
+.block-target{font-size:10px;font-weight:700;color:#274690;background:#E9F0FF;padding:3px 9px;border-radius:12px;letter-spacing:.02em}
+@media(prefers-color-scheme:dark){.block-target{background:#1b2740;color:#9db4e6}}
 .block-badge{font-size:10px;font-weight:700;color:var(--orange);background:var(--orange-soft);padding:3px 9px;border-radius:12px;letter-spacing:.04em}
 .set-card{padding:12px 14px;border-bottom:1px solid var(--border)}
 .set-card:last-child{border-bottom:none}
@@ -168,6 +171,9 @@ body::after{
 .sess-opt-sub{font-size:11px;color:var(--text2)}
 .sess-opt-tag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px}
 .sess-opt-tag.runna{background:var(--orange-soft);color:var(--orange)}
+.sess-opt-tag.hills{background:#E9F0FF;color:#274690}
+.hero-flag.hills{background:#274690}
+.filter-row button#f-hills.on{background:#274690;border-color:#274690}
 .sess-opt-tag.weights{background:rgba(11,27,63,.08);color:var(--navy)}
 .filter-row{display:flex;gap:6px;margin-bottom:14px}
 .filter-row button{flex:1;padding:8px;font-size:12px;font-weight:600;border:1px solid var(--border2);border-radius:18px;background:var(--card);color:var(--text2);cursor:pointer}
@@ -285,6 +291,8 @@ body::after{
 .home-head{padding:8px 2px 16px}
 .home-greeting{font-size:24px;font-weight:800}
 .home-sub{font-size:14px;color:var(--text2);margin-top:2px}
+.home-choose.three{grid-template-columns:1fr;gap:10px}
+.home-pick.hills{background:linear-gradient(150deg,#2f52a3,#1d3461)}
 .home-choose{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .home-pick{border:none;border-radius:var(--rl);padding:20px 14px;text-align:left;cursor:pointer;color:#fff;display:flex;flex-direction:column;gap:4px;min-height:96px;justify-content:flex-end}
 .home-pick.strength{background:linear-gradient(150deg,var(--orange),#e0530c)}
@@ -326,7 +334,6 @@ body::after{
   <div class="tab" id="tab-run"><div id="run-content"></div></div>
   <div class="tab" id="tab-history"><div id="hist-content"></div></div>
   <div class="tab" id="tab-more"><div id="more-content"></div></div>
-  <div class="tab" id="tab-marathon"><div id="marathon-content"></div></div>
 </div>
 
 <!-- Session picker -->
@@ -335,8 +342,9 @@ body::after{
     <div class="modal-title">Choose a session</div>
     <div class="modal-sub">Pick any workout — do them in whatever order suits you</div>
     <div class="filter-row">
-      <button class="on" id="f-runna" onclick="setFilter('runna')">Strength Training</button>
-      <button id="f-weights" onclick="setFilter('weights')">Weight Training</button>
+      <button class="on" id="f-runna" onclick="setFilter('runna')">Strength</button>
+      <button id="f-weights" onclick="setFilter('weights')">Weight</button>
+      <button id="f-hills" onclick="setFilter('hills')">Muscle</button>
     </div>
     <div id="sess-list"></div>
   </div>
@@ -355,16 +363,13 @@ body::after{
   <button id="nav-more" onclick="showTab('more')">
     <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>More
   </button>
-  <button id="nav-marathon" onclick="showTab('marathon')">
-    <svg viewBox="0 0 24 24"><path d="M4 21V4"/><path d="M4 4h13l-2 3.5L17 11H4"/></svg>Marathon
-  </button>
 </nav>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const DATA = {"weightSessions":[{"kind":"weights","title":"Week 1 Mon","subtitle":"Back & Biceps","wk":1,"day":"MON","exercises":["Wide Grip Pull Up","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Wide Grip Lat Pull Down","Seated Closed Grip Row","Dumbell Curl","Seated Bicep Curl","Hammer Dumbell Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 1 Tue","subtitle":"Chest & Triceps","wk":1,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Flat Barbell Press","Incline Dumbell Press","Pec Dec Cable Fly","Tricep Dips","Closed Grip EZ Bar Cable Pushdown","Wide Grip EZ Bar Cable Pushdown","Seated Tricep Extension"]},{"kind":"weights","title":"Week 1 Wed","subtitle":"Quads & Hamstrings","wk":1,"day":"WED","exercises":["Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 1 Thu","subtitle":"Shoulders & Calves","wk":1,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Calf Raise","Seated Calf Raise"]},{"kind":"weights","title":"Week 1 Fri","subtitle":"Biceps & Triceps","wk":1,"day":"FRI","exercises":["Single Arm Cable Pushdown (Underhand)","Single Arm Cable Pushdown (Overhand)","Cable Overhead Tricep Extension","Skull Crushers","Rope Cable Pushdown","Rope Hammercurl","EZ Barbell Curl","Seated Machine Single Curl"]},{"kind":"weights","title":"Week 1 Sun","subtitle":"Abs & Calves","wk":1,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Cable Woodchop Twist","Plank","Sit Ups","Seated Calf Raise","Standing Single Leg Calf Raise","Standing Smith Machine Calf Raise","Calf Extension Leg Press"]},{"kind":"weights","title":"Week 2 Mon","subtitle":"Back & Biceps","wk":2,"day":"MON","exercises":["Deadlift","Bent Over Barbell Row (Underhand)","Bent Over Barbell Row (Overhand)","Wide Grip Lat Pulldown","One Arm Dumbell Row","Standing V-Bar Row","Hyper Extension","Cable Lat Pullover","Seated Machine Single Bicep Curl","EZ Barbell Curl","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 2 Tue","subtitle":"Chest & Triceps","wk":2,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Cable Rope Pushdown","Wide Grip Cable Pushdown","Barbell Tricep Press"]},{"kind":"weights","title":"Week 2 Wed","subtitle":"Quads & Hamstrings","wk":2,"day":"WED","exercises":["Smith Machine Squat","Dumbell Lunges","Single Leg Extension","Seated Hamstring Curl","Leg Press","Dumbell Straight Leg Deadlift"]},{"kind":"weights","title":"Week 2 Thu","subtitle":"Shoulders & Calves","wk":2,"day":"THU","exercises":["Machine Shoulder Press","Dumbell Front Raise","Pec Dec Rear Fly","Cable Lateral Raise","Smith Machine Shrugs","Dumbell Press","Plate Front Raise","Seated Calve Raise","Standing Calve Raise"]},{"kind":"weights","title":"Week 2 Fri","subtitle":"Biceps & Triceps","wk":2,"day":"FRI","exercises":["Bicep Machine Curl","Single Arm Cable Curl","Cable Rope Hammer Curl","EZ Bar Cable Curl","EZ Bar Cable Pushdown","Machine Tricep Extension","Dumbell Skull Crush","Overhead EZ Bar Cable Extension"]},{"kind":"weights","title":"Week 2 Sun","subtitle":"Abs & Calves","wk":2,"day":"SUN","exercises":["Sit Ups","Dumbell Twist","Assisted Standing Machine Crunch","Side Plank","Seated Bench Crunches","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 3 Mon","subtitle":"Back & Biceps","wk":3,"day":"MON","exercises":["Rope Lat Pulldown","Seated Cable Row (V Bar)","Cable Lat Pullover","Machine Row","Wide Grip Pull Up","Bent Over Barbell Row (Underhand)","Hammer Curl","Straight Bar Cable Curl","Isolation Curl","Cable Rope Hammer Curl"]},{"kind":"weights","title":"Week 3 Tue","subtitle":"Chest & Triceps","wk":3,"day":"TUE","exercises":["Incline Cable Fly","Decline Smith Machine Press","Flat Dumbell Press","Incline Single Arm Dumbell Press","Flat Machine Press","Seated Incline Machine Press","Weighted Tricep Dip","Single Cable Pushdown","Dumbell Skull Crush","Bench Dips"]},{"kind":"weights","title":"Week 3 Wed","subtitle":"Quads & Hamstrings","wk":3,"day":"WED","exercises":["Lying Hamstring Curl","Squats (Free Standing Squat Rack)","Seated Hamstring Curl","Leg Extension","Barbell Lunges","Hacksquat"]},{"kind":"weights","title":"Week 3 Thu","subtitle":"Shoulders & Calves","wk":3,"day":"THU","exercises":["Military Press","Barbell Front Raise","Cable Rear Fly","Machine Lateral Raise","Barbell Shrugs","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 3 Fri","subtitle":"Biceps & Triceps","wk":3,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 3 Sun","subtitle":"Abs & Calves","wk":3,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Machine Assisted Oblique Twist","Weighted Sit Ups","Twisted Knee Raises","TRX Machine Crunches","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 4 Mon","subtitle":"Back & Biceps","wk":4,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Bicep Dumbell Curl","Machine Preacher Curl","Rope Hammer Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 4 Tue","subtitle":"Chest & Triceps","wk":4,"day":"TUE","exercises":["Single Dumbell Flat Press","Incline Dumbell Press","Cable Fly","Seated Single Pec Dec","Seated Pec Dec Fly","Dumbell Pullover","Plate Loaded Seated Press","Weighted Tricep Dips","Tricep Smith Machine Press","Rope Pushdown","Machine Tricep Dips"]},{"kind":"weights","title":"Week 4 Wed","subtitle":"Quads & Hamstrings","wk":4,"day":"WED","exercises":["Hack Squat","Leg Extension","Single Leg Extension","Lying Hamstring Curl","Single Seated Hamstring Curl","Leg Press","Weighted Dumbell Lunges","Weighted Sled Push"]},{"kind":"weights","title":"Week 4 Thu","subtitle":"Shoulders & Calves","wk":4,"day":"THU","exercises":["Smith Machine Press","Single Dumbell Press","Standing Cable Front Raise","Standing Dumbell Lateral Raise","Standing Machine Shrugs","Seated Fly Pec Dec","Plate Loaded Seated Calf Raise","Single Leg Calf Raise","Standing Smith Machine Calf Raise","Calf Extension Leg Press"]},{"kind":"weights","title":"Week 4 Fri","subtitle":"Biceps & Triceps","wk":4,"day":"FRI","exercises":["Cable Rope Pulldown","Single Arm Dumbell Skull Crush","Own Bodyweight Bench Dips","EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 4 Sun","subtitle":"Abs & Calves","wk":4,"day":"SUN","exercises":["Hanging Leg Raise","Plank","Cable Rope Ab Crunches","Lying Bench Leg Raise","Dumbell Oblique Twist","GHD Sit-Ups","Smith Machine Standing Calf Raise","Seated Machine Calf Press","Seated Calf Raise"]},{"kind":"weights","title":"Week 5 Mon","subtitle":"Back & Biceps","wk":5,"day":"MON","exercises":["Wide Grip Lat Pulldown","Plate Loaded Seated Row","Lying T-Bar Row","Hyper Extension","Single Arm Dumbell Row","Closed Grip Cable Row","Dumbell Curl","Machine Bicep Curl","Smith Machine Drag Curl","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 5 Tue","subtitle":"Chest & Triceps","wk":5,"day":"TUE","exercises":["Incline Dumbell Press","Seated Plate Loaded Chest Press","Pec Dec","Decline Barbell Press","Chest Contraction","Dumbell Pullover","Smith Machine Flat Press","Skull Crusher","Bench Tricep Dips","Machine Tricep Extension","Cable Rope Trceip Pulldown"]},{"kind":"weights","title":"Week 5 Wed","subtitle":"Quads & Hamstrings","wk":5,"day":"WED","exercises":["Smith Machine Squat","Dumbell Straight Leg Deadlift","Single Leg Press","Standing Single Leg Hamstring Curl","Single Leg Extension","Lying Hamstring Curl","Aductor","Abductor","Walking Lunges"]},{"kind":"weights","title":"Week 5 Thu","subtitle":"Shoulders & Calves","wk":5,"day":"THU","exercises":["Single Arm Dumbell Press","Smith Machine Press","Pec Dec Rear Fly","Dumbell Lateral Raise","Dumbell Shrug","Single Arm Cable Front Raise","Cable Front Raise (Both Shoulders)","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 5 Fri","subtitle":"Biceps & Triceps","wk":5,"day":"FRI","exercises":["Seated EZ Barbell Skull Crush","Plate Loaded Tricep Dip Machine","Overhead Cable Tricep Extension","Dumbell Hammer Curl","Straight Barbell Curl","Rope Hammer Curl","Dumbell Preacher Curl","Tricep Rope Extension"]},{"kind":"weights","title":"Week 5 Sun","subtitle":"Abs & Calves","wk":5,"day":"SUN","exercises":["Incline Sit Ups","Standing Weighted Crunch","Cable Wood Chop","Plank","Bench Leg Raises","Rope Cable Weighted Crunch","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 6 Mon","subtitle":"Back & Biceps","wk":6,"day":"MON","exercises":["Wide Grip Lat Pulldown","V Bar Seated Row","Iso-Lateral High Raise Row","Plate Loaded Seated T Bar Row","Iso-Lateral Low Row","Hyper Extension","Machine Overhead Lat Pulldown","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 6 Tue","subtitle":"Chest & Triceps","wk":6,"day":"TUE","exercises":["Barbell Bench Press","Seated Machine Chest Press","Incline Bench Cable Fly","Incline Dumbell Pullover","Peck Deck Machine","Incline Dumbell Press","Chest Dips","Weighted Tricep Dips","Dumbell Skull Crush","Cable Rope Tricep Extension","Seated Tricep Dips"]},{"kind":"weights","title":"Week 6 Wed","subtitle":"Quads & Hamstrings","wk":6,"day":"WED","exercises":["Smith Machine Squat","Weighted Lunges (Squat Rack)","Sissy Squat","Leg Extension","Seated Hamstring Curl","Dumbell Straight Leg Deadlift","Lying Hamstring Curl"]},{"kind":"weights","title":"Week 6 Thu","subtitle":"Shoulders & Calves","wk":6,"day":"THU","exercises":["Plate Raises","Cable Rope Overhead Extension","Dumbell Side Lateral Raise","Shoulder Press","Smith Machine Reverse Shrug","Smith Machine Military Press","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 6 Fri","subtitle":"Biceps & Triceps","wk":6,"day":"FRI","exercises":["Rope Tricep Pulldown","Wide Grip Tricep Pushdown","60 Second Tricep Tensing","EZ Barbell Skull Crush","Single Arm Cable Pushdown","Tricep Bench Dips","Single Arm Cable Curl","EZ Barbell Curl","Dumbell Hammer Curl","Cable Rope Hammer Curl","Smith Machine Drag Curl"]},{"kind":"weights","title":"Week 6 Sun","subtitle":"Abs & Calves","wk":6,"day":"SUN","exercises":["Hanging Leg Raise","Cable Wood Chop","TRX Side Crunches","Weighted Cable Rope Crunch","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 7 Mon","subtitle":"Back & Biceps","wk":7,"day":"MON","exercises":["V Bar Lat Pulldown","Standing T-Bar Row","Rack Deadlift","Single Arm Dumbell Row","Seated Machine Overhand Row","Seated Machine Hyper Extension","Barbell Bicep Curl","Single Arm Dumbell Curl","EZ Bar Cable Curl","Weighted Machine Curl","Smith Machine Drag Curl"]},{"kind":"weights","title":"Week 7 Tue","subtitle":"Chest & Triceps","wk":7,"day":"TUE","exercises":["Barbell Bench Press","Seated Machine Press","Incline Bench Cable Fly","Pec-Deck Machine","Incline Dumbell Pullover","Flat Bench Dumbell Press","Rope Cable Pulldown","Dumbell Skull Crush","Machine Tricep Extension","Bench Tricep Dips","EZ Bar Cable Pushdown"]},{"kind":"weights","title":"Week 7 Wed","subtitle":"Quads & Hamstrings","wk":7,"day":"WED","exercises":["Front Squats (Squat Rack)","Dumbell Lunge","Weighted Sled Push","Kettle Bell One-Legged Deadlift","Single Leg Standing Hamstring Curl","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 7 Thu","subtitle":"Shoulders & Calves","wk":7,"day":"THU","exercises":["Seated Dumbell Bent Over Delt Raise","Seated Barbell Military Press","Front Cable Raise","Reverse Machine Flyes","Upright Cable Row","Side Lateral Raise","Reverse Smith Machine Shrugs","Seated Dumbell Shrugs","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 7 Fri","subtitle":"Biceps & Triceps","wk":7,"day":"FRI","exercises":["Underhand Single Arm Cable Extension","Overhand Single Arm Cable Extension","Wide Grip EZ Bar Cable Pushdown","Front Dip Machine","EZ Bar Curl","Single Arm Dumbell Curl","Single Arm Overhead Cable Curl","Preacher Curl","Skull Crushers","Hammer Curl"]},{"kind":"weights","title":"Week 7 Sun","subtitle":"Abs & Calves","wk":7,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Machine Assisted Oblique Twist","Weighted Sit Ups","Twisted Knee Raises","TRX Machine Crunches","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 8 Mon","subtitle":"Back & Biceps","wk":8,"day":"MON","exercises":["Barbell Deadlift","Wide Grip Pull Up","Standing T-Bar Row","V-Bar Seated Row","Hyper Extension","Overhand Machine Row","Standing Cable Face Curls","Single Arm Dumbell Hammer Curls","Dumbell Spider Curls"]},{"kind":"weights","title":"Week 8 Tue","subtitle":"Chest & Triceps","wk":8,"day":"TUE","exercises":["Barbell Bench Press","Weighted Pushup","Cable Fly","Incline Dumbell Bench Press","Dumbell Pullover","Seated Machine Chest Press","Chest Dips","Rope Cable Push Down","Dumbell Skull Crush","Tricep Squeeze and Contraction","Reverse Grip Pushdown","Overhead Cable Extension","Diamond Push Ups"]},{"kind":"weights","title":"Week 8 Wed","subtitle":"Quads & Hamstrings","wk":8,"day":"WED","exercises":["Goblet Squat","Barbell Lunge","Leg Press","Lying Hamstring Curl","Stiff Leg Dumbell Deadlift","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 8 Thu","subtitle":"Shoulders & Calves","wk":8,"day":"THU","exercises":["Standing Front Barbell Raise","Seated Bent Over Dumbell Delt Raise","Machine Shoulder Press","Pec Dec Rear Flys","Machine Cable Side Lateral Raise","Cable Rope Face Pulls","Smith Machine Standing Calf Raise","Seated Machine Calf Press","Seated Calf Raise"]},{"kind":"weights","title":"Week 8 Fri","subtitle":"Biceps & Triceps","wk":8,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 8 Sun","subtitle":"Abs & Calves","wk":8,"day":"SUN","exercises":["Machine Oblique Twists","Hanging Leg Raise","Cable Rope Ab Crunch","Weighted Sit Ups","Plank","Seated Calf Press","Plate Loaded Seated Calf Raise","Smith Machine Calf Raise"]},{"kind":"weights","title":"Week 9 Mon","subtitle":"Back & Biceps","wk":9,"day":"MON","exercises":["Seated T-Bar Row","Hyper Extension","Close Grip Pull Down","Wide Grip Seated Cable Row","Machine Assisted Lower Back Extension","Single Arm Smith Machine Row","Wide Grip Pull Up","Stiff Arm Pull Down","Hammer Curl","Straight Bar Cable Curl","Isolation Curl","Dumbell Curl"]},{"kind":"weights","title":"Week 9 Tue","subtitle":"Chest & Triceps","wk":9,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Chest Dips","Pushups","Weighted Tricep Dip","Single Cable Pushdown","Machine Tricep Extension","Tricep Smith Machine Press"]},{"kind":"weights","title":"Week 9 Wed","subtitle":"Quads & Hamstrings","wk":9,"day":"WED","exercises":["Smith Machine Squat","Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 9 Thu","subtitle":"Shoulders & Calves","wk":9,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Calf Raise","Seated Calf Raise"]},{"kind":"weights","title":"Week 9 Fri","subtitle":"Biceps & Triceps","wk":9,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 9 Sun","subtitle":"Abs & Calves","wk":9,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 10 Mon","subtitle":"Back & Biceps","wk":10,"day":"MON","exercises":["Wide Grip Pull Up","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Machine Assisted Lower Back Extension","Wide Grip Lat Pull Down","Seated Closed Grip Row","Cable Rope Pullover","Bent Over Barbell Row (Underhand)","Concentration Dumbell Curls","Preacher Dumbell Hammer Curls","EZ Bar Preacher Curls","EZ Bar Drag Curl","Cable Rope Curl"]},{"kind":"weights","title":"Week 10 Tue","subtitle":"Chest & Triceps","wk":10,"day":"TUE","exercises":["Pec Dec","Seated Incline Machine Press","Incline Bench Cable Fly","Incline Dumbell Pullover","Incline Single Arm Dumbell Press","Flat Machine Press","EZ Bar Skull Crush","EZ Bar Underhand Cable Pull Down","Tricep Squeeze and Contraction","EZ Bar Overhand Cable Pull Down","Cable Rope Pull Down"]},{"kind":"weights","title":"Week 10 Wed","subtitle":"Quads & Hamstrings","wk":10,"day":"WED","exercises":["Lunges","Sled Push","Single Standing Hamstring Curl","Leg Press","Lying Hamstring Curl","Single Leg Extension","Aductors"]},{"kind":"weights","title":"Week 10 Thu","subtitle":"Shoulders & Calves","wk":10,"day":"THU","exercises":["Military Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Single Dumbell Press","Standing Cable Front Raise","Dumbell Front Raise","Dumbell Lateral Raise","Seated Calf Press","Plate Loaded Seated Calf Raise"]},{"kind":"weights","title":"Week 10 Fri","subtitle":"Biceps & Triceps","wk":10,"day":"FRI","exercises":["Seated Tricep Extension Machine","Lyng Single Arm Dumbell Skull Crush","Seated Dumbell Skull Crush","Overhead Rope Cable Extension","Seated Machine Dips","Overhand Barbell Curl","Cable Curl Face Pulls","Single Arm Cable Curl Face Pulls","Plate Hammer Curls","Bicep Squeeze and Contraction"]},{"kind":"weights","title":"Week 10 Sun","subtitle":"Abs & Calves","wk":10,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 11 Mon","subtitle":"Back & Biceps","wk":11,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Iso-Lateral Low Row","Hammer Curl","Straight Bar Cable Curl","Isolation Curl"]},{"kind":"weights","title":"Week 11 Tue","subtitle":"Chest & Triceps","wk":11,"day":"TUE","exercises":["Incline Dumbell Press","Seated Plate Loaded Chest Press","Pec Dec","Dumbell Pullover","Smith Machine Flat Press","Decline Barbell Press","Chest Contraction","Weighted Tricep Dip","Single Cable Pushdown","Single Arm Dumbell Skull Crush","Bench Dips","Tricep Squeeze and Contraction"]},{"kind":"weights","title":"Week 11 Wed","subtitle":"Quads & Hamstrings","wk":11,"day":"WED","exercises":["Lying Hamstring Curl","Squats (Free Standing Squat Rack)","Seated Hamstring Curl","Leg Extension","Barbell Lunges","Aductors"]},{"kind":"weights","title":"Week 11 Thu","subtitle":"Shoulders & Calves","wk":11,"day":"THU","exercises":["Military Press","Barbell Front Raise","Cable Rear Fly","Machine Lateral Raise","Barbell Shrugs","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 11 Fri","subtitle":"Biceps & Triceps","wk":11,"day":"FRI","exercises":["Seated EZ Barbell Skull Crush","Plate Loaded Tricep Dip Machine","Overhead Cable Tricep Extension","Dumbell Hammer Curl","Straight Barbell Curl","Rope Hammer Curl","Dumbell Preacher Curl","Tricep Rope Extension"]},{"kind":"weights","title":"Week 11 Sun","subtitle":"Abs & Calves","wk":11,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 12 Mon","subtitle":"Back & Biceps","wk":12,"day":"MON","exercises":["Barbell Deadlift","Wide Grip Pull Up","Standing T-Bar Row","V-Bar Seated Row","Hyper Extension","Overhand Machine Row","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 12 Tue","subtitle":"Chest & Triceps","wk":12,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Weighted Tricep Dips","Tricep Smith Machine Press","Rope Pushdown","Machine Tricep Dips"]},{"kind":"weights","title":"Week 12 Wed","subtitle":"Quads & Hamstrings","wk":12,"day":"WED","exercises":["Weighted Lunges (Squat Rack)","Sissy Squat","Seated Hamstring Curl","Dumbell Straight Leg Deadlift","Lying Hamstring Curl"]},{"kind":"weights","title":"Week 12 Thu","subtitle":"Shoulders & Calves","wk":12,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 12 Fri","subtitle":"Biceps & Triceps","wk":12,"day":"FRI","exercises":["Underhand Single Arm Cable Extension","Overhand Single Arm Cable Extension","Wide Grip EZ Bar Cable Pushdown","Front Dip Machine","EZ Bar Curl","Single Arm Dumbell Curl","Single Arm Overhead Cable Curl","Preacher Curl","Skull Crushers","Hammer Curl"]},{"kind":"weights","title":"Week 12 Sun","subtitle":"Abs & Calves","wk":12,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 13 Mon","subtitle":"Back & Biceps","wk":13,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 13 Tue","subtitle":"Chest & Triceps","wk":13,"day":"TUE","exercises":["Incline Dumbell Pullover","Incline Single Arm Dumbell Press","Flat Machine Press","Rope Cable Pulldown","Dumbell Skull Crush","Machine Tricep Extension","Bench Tricep Dips"]},{"kind":"weights","title":"Week 13 Wed","subtitle":"Quads & Hamstrings","wk":13,"day":"WED","exercises":["Goblet Squat","Barbell Lunge","Leg Press","Lying Hamstring Curl","Stiff Leg Dumbell Deadlift","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 13 Thu","subtitle":"Shoulders & Calves","wk":13,"day":"THU","exercises":["Single Arm Dumbell Press","Smith Machine Press","Pec Dec Rear Fly","Dumbell Lateral Raise","Dumbell Shrug","Single Arm Cable Front Raise","Cable Front Raise (Both Shoulders)","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 13 Fri","subtitle":"Biceps & Triceps","wk":13,"day":"FRI","exercises":["EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 13 Sun","subtitle":"Abs & Calves","wk":13,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 14 Mon","subtitle":"Back & Biceps","wk":14,"day":"MON","exercises":["Wide Grip Lat Pulldown","Plate Loaded Seated Row","Lying T-Bar Row","Hyper Extension","Single Arm Dumbell Row","Closed Grip Cable Row","Standing Cable Face Curls","Single Arm Dumbell Hammer Curls","Dumbell Spider Curls"]},{"kind":"weights","title":"Week 14 Tue","subtitle":"Chest & Triceps","wk":14,"day":"TUE","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers"]},{"kind":"weights","title":"Week 14 Wed","subtitle":"Quads & Hamstrings","wk":14,"day":"WED","exercises":["Smith Machine Squat","Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 14 Thu","subtitle":"Shoulders & Calves","wk":14,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Standing Smith Machine Calf Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 14 Fri","subtitle":"Biceps & Triceps","wk":14,"day":"FRI","exercises":["EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 14 Sun","subtitle":"Abs & Calves","wk":14,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 15 Mon","subtitle":"Back & Biceps","wk":15,"day":"MON","exercises":["Wide Grip Lat Pulldown","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Wide Grip Lat Pull Down","Seated Closed Grip Row","Dumbell Curl","Seated Bicep Curl","Hammer Dumbell Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 15 Tue","subtitle":"Chest & Triceps","wk":15,"day":"TUE","exercises":["Seated Incline Machine Press","Tricep Dips","Closed Grip EZ Bar Cable Pushdown","Wide Grip EZ Bar Cable Pushdown","Seated Tricep Extension"]},{"kind":"weights","title":"Week 15 Wed","subtitle":"Quads & Hamstrings","wk":15,"day":"WED","exercises":["Smith Machine Squat","Dumbell Lunges","Single Leg Extension","Seated Hamstring Curl","Leg Press","Dumbell Straight Leg Deadlift"]},{"kind":"weights","title":"Week 15 Thu","subtitle":"Shoulders & Calves","wk":15,"day":"THU","exercises":["Plate Raises","Pec Dec Rear Fly","Dumbell Side Lateral Raise","Smith Machine Press","Smith Machine Reverse Shrug","Cable Rope Face Pull","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 15 Fri","subtitle":"Biceps & Triceps","wk":15,"day":"FRI","exercises":["Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 15 Sun","subtitle":"Abs & Calves","wk":15,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 16 Mon","subtitle":"Back & Biceps","wk":16,"day":"MON","exercises":["Dumbell Shoulder Press","Lat Pull Down","Flat Dumbell Press","Machine Lateral Raise","Seated Row","Incline Barbell Press"]},{"kind":"weights","title":"Week 16 Tue","subtitle":"Chest & Triceps","wk":16,"day":"TUE","exercises":["Cable Rear Delt Fly","Bent Over Barbell Row","Cable Flyes","Cable Curl","Rope Pushdown"]},{"kind":"weights","title":"Week 16 Wed","subtitle":"Quads & Hamstrings","wk":16,"day":"WED","exercises":["EZ Bar Curl","Tricep Extension","Squats","Leg Press","Leg Extensions","Lunges"]},{"kind":"weights","title":"Week 16 Thu","subtitle":"Shoulders & Calves","wk":16,"day":"THU","exercises":["Lying Leg Curl","Seated Hamstring Curl","Stiff Leg Deadlift","Lunges","Seated Calf Raise","Smith Machine Calf Raises","Single Leg Calf Raise","Leg Press Calf Raise"]},{"kind":"weights","title":"Week 16 Sun","subtitle":"Abs & Calves","wk":16,"day":"SUN","exercises":["Rest Day"]}],"runnaSessions":[{"kind":"runna","title":"Strong Foundation","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Glute Bridge into Hamstring Walkout","Clam Shells","Squat to Calf Raise","Side Leg Swings"]},{"sets":4,"exercises":["Single Leg Squat"]},{"sets":2,"exercises":["Step Down"]},{"sets":2,"exercises":["Staggered Stance RDLs","Double Arm Clean"]},{"sets":2,"exercises":["Step Up and Knee Drive","Side Plank Leg Raise"]},{"sets":2,"exercises":["Plank Twist","Loaded Walking Calf Raises"]}]},{"kind":"runna","title":"Stronger Upper Body","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Press Up Position Walk Out","Floating Heel Drop","Mountain Climber","Bear Crawl"]},{"sets":2,"exercises":["Single Arm Row","Single Arm Clean"]},{"sets":2,"exercises":["Seated Barbell Press","Single Arm Bench Press"]},{"sets":2,"exercises":["Lunge and Press","Diagonal Toe Tap"]},{"sets":3,"exercises":["Press-Up Position with Single Arm Extensions","Side Plank Leg Raise"]}]},{"kind":"runna","title":"Going Heavy","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Heel Walks","Travelling Press Up Walk out","Side Lunge","Press Up"]},{"sets":2,"exercises":["Reverse Lunge","Reverse Fly"]},{"sets":2,"exercises":["KB Swings","Lunge Hold Calf Raise"]},{"sets":2,"exercises":["Standing Side Raise","Barbell Hip Thrust"]},{"sets":2,"exercises":["Standing Side Bend","Short Lever Copenhagen Plank"]}]},{"kind":"runna","title":"Lower Body Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Step Up","Travelling Press Up Walk out","Squat to Calf Raise","Floating Heel Drop"]},{"sets":2,"exercises":["Barbell Hip Thrust","Pogo Jumps"]},{"sets":2,"exercises":["Static Lunge","Short Lever Copenhagen Plank"]},{"sets":2,"exercises":["KB Swings","Farmer's Carry"]},{"sets":2,"exercises":["Standing Side Bend","Lunge and Press"]}]},{"kind":"runna","title":"Building Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Lunge Hold Calf Raise","Press Up Position Diagonal Toe Tap","Glute Bridge into Hamstring Walkout","Mountain Climber"]},{"sets":3,"exercises":["Staggered Stance RDLs"]},{"sets":3,"exercises":["Standing Single Arm Shoulder Press"]},{"sets":2,"exercises":["Staggered Stance (B-Stance) Hip Thrusts","Barbell Bench Press"]},{"sets":2,"exercises":["Sumo Deadlift","Single Arm Clean and Press"]},{"sets":2,"exercises":["Plank Twist","Double Leg Skipping"]}]},{"kind":"runna","title":"Upper Body Strength","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Press Up Position Walk Out","Heel Walks","Press Up","Diagonal Toe Tap"]},{"sets":2,"exercises":["Push Press"]},{"sets":2,"exercises":["Single Arm Bench Press"]},{"sets":2,"exercises":["Roll Down","Thruster"]},{"sets":2,"exercises":["Tricep Dip","Side Plank"]},{"sets":3,"exercises":["Side Plank with Hip Flexion","Russian Twist"]}]},{"kind":"runna","title":"Legs & Core Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Bodyweight Squat","Bear Crawl","Side Leg Swings","Toe Walks"]},{"sets":3,"exercises":["Barbell Squat","Box Jump Down to Tuck Jump"]},{"sets":3,"exercises":["Single Leg Straight Leg Deadlift with Knee Drive","Single Leg Calf Raise"]},{"sets":2,"exercises":["Step Down","Box Jump"]},{"sets":2,"exercises":["Crunch and Press","Hanging Knee Raise"]}]}],"sequence":[{"type":"runna","idx":0},{"type":"weights","idx":0},{"type":"runna","idx":1},{"type":"weights","idx":1},{"type":"runna","idx":2},{"type":"weights","idx":2},{"type":"runna","idx":3},{"type":"weights","idx":3},{"type":"runna","idx":4},{"type":"weights","idx":4},{"type":"runna","idx":5},{"type":"weights","idx":5},{"type":"runna","idx":6},{"type":"weights","idx":6},{"type":"runna","idx":0},{"type":"weights","idx":7},{"type":"runna","idx":1},{"type":"weights","idx":8},{"type":"runna","idx":2},{"type":"weights","idx":9},{"type":"runna","idx":3},{"type":"weights","idx":10},{"type":"runna","idx":4},{"type":"weights","idx":11},{"type":"runna","idx":5},{"type":"weights","idx":12},{"type":"runna","idx":6},{"type":"weights","idx":13},{"type":"runna","idx":0},{"type":"weights","idx":14},{"type":"runna","idx":1},{"type":"weights","idx":15},{"type":"runna","idx":2},{"type":"weights","idx":16},{"type":"runna","idx":3},{"type":"weights","idx":17},{"type":"runna","idx":4},{"type":"weights","idx":18},{"type":"runna","idx":5},{"type":"weights","idx":19},{"type":"runna","idx":6},{"type":"weights","idx":20},{"type":"runna","idx":0},{"type":"weights","idx":21},{"type":"runna","idx":1},{"type":"weights","idx":22},{"type":"runna","idx":2},{"type":"weights","idx":23},{"type":"runna","idx":3},{"type":"weights","idx":24},{"type":"runna","idx":4},{"type":"weights","idx":25},{"type":"runna","idx":5},{"type":"weights","idx":26},{"type":"runna","idx":6},{"type":"weights","idx":27},{"type":"runna","idx":0},{"type":"weights","idx":28},{"type":"runna","idx":1},{"type":"weights","idx":29},{"type":"runna","idx":2},{"type":"weights","idx":30},{"type":"runna","idx":3},{"type":"weights","idx":31},{"type":"runna","idx":4},{"type":"weights","idx":32},{"type":"runna","idx":5},{"type":"weights","idx":33},{"type":"runna","idx":6},{"type":"weights","idx":34},{"type":"runna","idx":0},{"type":"weights","idx":35},{"type":"runna","idx":1},{"type":"weights","idx":36},{"type":"runna","idx":2},{"type":"weights","idx":37},{"type":"runna","idx":3},{"type":"weights","idx":38},{"type":"runna","idx":4},{"type":"weights","idx":39},{"type":"runna","idx":5},{"type":"weights","idx":40},{"type":"runna","idx":6},{"type":"weights","idx":41},{"type":"runna","idx":0},{"type":"weights","idx":42},{"type":"runna","idx":1},{"type":"weights","idx":43},{"type":"runna","idx":2},{"type":"weights","idx":44},{"type":"runna","idx":3},{"type":"weights","idx":45},{"type":"runna","idx":4},{"type":"weights","idx":46},{"type":"runna","idx":5},{"type":"weights","idx":47},{"type":"runna","idx":6},{"type":"weights","idx":48},{"type":"runna","idx":0},{"type":"weights","idx":49},{"type":"runna","idx":1},{"type":"weights","idx":50},{"type":"runna","idx":2},{"type":"weights","idx":51},{"type":"runna","idx":3},{"type":"weights","idx":52},{"type":"runna","idx":4},{"type":"weights","idx":53},{"type":"runna","idx":5},{"type":"weights","idx":54},{"type":"runna","idx":6},{"type":"weights","idx":55},{"type":"runna","idx":0},{"type":"weights","idx":56},{"type":"runna","idx":1},{"type":"weights","idx":57},{"type":"runna","idx":2},{"type":"weights","idx":58},{"type":"runna","idx":3},{"type":"weights","idx":59},{"type":"runna","idx":4},{"type":"weights","idx":60},{"type":"runna","idx":5},{"type":"weights","idx":61},{"type":"runna","idx":6},{"type":"weights","idx":62},{"type":"runna","idx":0},{"type":"weights","idx":63},{"type":"runna","idx":1},{"type":"weights","idx":64},{"type":"runna","idx":2},{"type":"weights","idx":65},{"type":"runna","idx":3},{"type":"weights","idx":66},{"type":"runna","idx":4},{"type":"weights","idx":67},{"type":"runna","idx":5},{"type":"weights","idx":68},{"type":"runna","idx":6},{"type":"weights","idx":69},{"type":"runna","idx":0},{"type":"weights","idx":70},{"type":"runna","idx":1},{"type":"weights","idx":71},{"type":"runna","idx":2},{"type":"weights","idx":72},{"type":"runna","idx":3},{"type":"weights","idx":73},{"type":"runna","idx":4},{"type":"weights","idx":74},{"type":"runna","idx":5},{"type":"weights","idx":75},{"type":"runna","idx":6},{"type":"weights","idx":76},{"type":"runna","idx":0},{"type":"weights","idx":77},{"type":"runna","idx":1},{"type":"weights","idx":78},{"type":"runna","idx":2},{"type":"weights","idx":79},{"type":"runna","idx":3},{"type":"weights","idx":80},{"type":"runna","idx":4},{"type":"weights","idx":81},{"type":"runna","idx":5},{"type":"weights","idx":82},{"type":"runna","idx":6},{"type":"weights","idx":83},{"type":"runna","idx":0},{"type":"weights","idx":84},{"type":"runna","idx":1},{"type":"weights","idx":85},{"type":"runna","idx":2},{"type":"weights","idx":86},{"type":"runna","idx":3},{"type":"weights","idx":87},{"type":"runna","idx":4},{"type":"weights","idx":88},{"type":"runna","idx":5},{"type":"weights","idx":89},{"type":"runna","idx":6},{"type":"weights","idx":90},{"type":"runna","idx":0},{"type":"weights","idx":91},{"type":"runna","idx":1},{"type":"weights","idx":92},{"type":"runna","idx":2},{"type":"weights","idx":93},{"type":"runna","idx":3},{"type":"weights","idx":94}]};
-const WS = DATA.weightSessions, RS = DATA.runnaSessions, SEQ = DATA.sequence;
+const DATA = {"weightSessions":[{"kind":"weights","title":"Week 1 Mon","subtitle":"Back & Biceps","wk":1,"day":"MON","exercises":["Wide Grip Pull Up","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Wide Grip Lat Pull Down","Seated Closed Grip Row","Dumbell Curl","Seated Bicep Curl","Hammer Dumbell Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 1 Tue","subtitle":"Chest & Triceps","wk":1,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Flat Barbell Press","Incline Dumbell Press","Pec Dec Cable Fly","Tricep Dips","Closed Grip EZ Bar Cable Pushdown","Wide Grip EZ Bar Cable Pushdown","Seated Tricep Extension"]},{"kind":"weights","title":"Week 1 Wed","subtitle":"Quads & Hamstrings","wk":1,"day":"WED","exercises":["Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 1 Thu","subtitle":"Shoulders & Calves","wk":1,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Calf Raise","Seated Calf Raise"]},{"kind":"weights","title":"Week 1 Fri","subtitle":"Biceps & Triceps","wk":1,"day":"FRI","exercises":["Single Arm Cable Pushdown (Underhand)","Single Arm Cable Pushdown (Overhand)","Cable Overhead Tricep Extension","Skull Crushers","Rope Cable Pushdown","Rope Hammercurl","EZ Barbell Curl","Seated Machine Single Curl"]},{"kind":"weights","title":"Week 1 Sun","subtitle":"Abs & Calves","wk":1,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Cable Woodchop Twist","Plank","Sit Ups","Seated Calf Raise","Standing Single Leg Calf Raise","Standing Smith Machine Calf Raise","Calf Extension Leg Press"]},{"kind":"weights","title":"Week 2 Mon","subtitle":"Back & Biceps","wk":2,"day":"MON","exercises":["Deadlift","Bent Over Barbell Row (Underhand)","Bent Over Barbell Row (Overhand)","Wide Grip Lat Pulldown","One Arm Dumbell Row","Standing V-Bar Row","Hyper Extension","Cable Lat Pullover","Seated Machine Single Bicep Curl","EZ Barbell Curl","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 2 Tue","subtitle":"Chest & Triceps","wk":2,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Cable Rope Pushdown","Wide Grip Cable Pushdown","Barbell Tricep Press"]},{"kind":"weights","title":"Week 2 Wed","subtitle":"Quads & Hamstrings","wk":2,"day":"WED","exercises":["Smith Machine Squat","Dumbell Lunges","Single Leg Extension","Seated Hamstring Curl","Leg Press","Dumbell Straight Leg Deadlift"]},{"kind":"weights","title":"Week 2 Thu","subtitle":"Shoulders & Calves","wk":2,"day":"THU","exercises":["Machine Shoulder Press","Dumbell Front Raise","Pec Dec Rear Fly","Cable Lateral Raise","Smith Machine Shrugs","Dumbell Press","Plate Front Raise","Seated Calve Raise","Standing Calve Raise"]},{"kind":"weights","title":"Week 2 Fri","subtitle":"Biceps & Triceps","wk":2,"day":"FRI","exercises":["Bicep Machine Curl","Single Arm Cable Curl","Cable Rope Hammer Curl","EZ Bar Cable Curl","EZ Bar Cable Pushdown","Machine Tricep Extension","Dumbell Skull Crush","Overhead EZ Bar Cable Extension"]},{"kind":"weights","title":"Week 2 Sun","subtitle":"Abs & Calves","wk":2,"day":"SUN","exercises":["Sit Ups","Dumbell Twist","Assisted Standing Machine Crunch","Side Plank","Seated Bench Crunches","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 3 Mon","subtitle":"Back & Biceps","wk":3,"day":"MON","exercises":["Rope Lat Pulldown","Seated Cable Row (V Bar)","Cable Lat Pullover","Machine Row","Wide Grip Pull Up","Bent Over Barbell Row (Underhand)","Hammer Curl","Straight Bar Cable Curl","Isolation Curl","Cable Rope Hammer Curl"]},{"kind":"weights","title":"Week 3 Tue","subtitle":"Chest & Triceps","wk":3,"day":"TUE","exercises":["Incline Cable Fly","Decline Smith Machine Press","Flat Dumbell Press","Incline Single Arm Dumbell Press","Flat Machine Press","Seated Incline Machine Press","Weighted Tricep Dip","Single Cable Pushdown","Dumbell Skull Crush","Bench Dips"]},{"kind":"weights","title":"Week 3 Wed","subtitle":"Quads & Hamstrings","wk":3,"day":"WED","exercises":["Lying Hamstring Curl","Squats (Free Standing Squat Rack)","Seated Hamstring Curl","Leg Extension","Barbell Lunges","Hacksquat"]},{"kind":"weights","title":"Week 3 Thu","subtitle":"Shoulders & Calves","wk":3,"day":"THU","exercises":["Military Press","Barbell Front Raise","Cable Rear Fly","Machine Lateral Raise","Barbell Shrugs","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 3 Fri","subtitle":"Biceps & Triceps","wk":3,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 3 Sun","subtitle":"Abs & Calves","wk":3,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Machine Assisted Oblique Twist","Weighted Sit Ups","Twisted Knee Raises","TRX Machine Crunches","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 4 Mon","subtitle":"Back & Biceps","wk":4,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Bicep Dumbell Curl","Machine Preacher Curl","Rope Hammer Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 4 Tue","subtitle":"Chest & Triceps","wk":4,"day":"TUE","exercises":["Single Dumbell Flat Press","Incline Dumbell Press","Cable Fly","Seated Single Pec Dec","Seated Pec Dec Fly","Dumbell Pullover","Plate Loaded Seated Press","Weighted Tricep Dips","Tricep Smith Machine Press","Rope Pushdown","Machine Tricep Dips"]},{"kind":"weights","title":"Week 4 Wed","subtitle":"Quads & Hamstrings","wk":4,"day":"WED","exercises":["Hack Squat","Leg Extension","Single Leg Extension","Lying Hamstring Curl","Single Seated Hamstring Curl","Leg Press","Weighted Dumbell Lunges","Weighted Sled Push"]},{"kind":"weights","title":"Week 4 Thu","subtitle":"Shoulders & Calves","wk":4,"day":"THU","exercises":["Smith Machine Press","Single Dumbell Press","Standing Cable Front Raise","Standing Dumbell Lateral Raise","Standing Machine Shrugs","Seated Fly Pec Dec","Plate Loaded Seated Calf Raise","Single Leg Calf Raise","Standing Smith Machine Calf Raise","Calf Extension Leg Press"]},{"kind":"weights","title":"Week 4 Fri","subtitle":"Biceps & Triceps","wk":4,"day":"FRI","exercises":["Cable Rope Pulldown","Single Arm Dumbell Skull Crush","Own Bodyweight Bench Dips","EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 4 Sun","subtitle":"Abs & Calves","wk":4,"day":"SUN","exercises":["Hanging Leg Raise","Plank","Cable Rope Ab Crunches","Lying Bench Leg Raise","Dumbell Oblique Twist","GHD Sit-Ups","Smith Machine Standing Calf Raise","Seated Machine Calf Press","Seated Calf Raise"]},{"kind":"weights","title":"Week 5 Mon","subtitle":"Back & Biceps","wk":5,"day":"MON","exercises":["Wide Grip Lat Pulldown","Plate Loaded Seated Row","Lying T-Bar Row","Hyper Extension","Single Arm Dumbell Row","Closed Grip Cable Row","Dumbell Curl","Machine Bicep Curl","Smith Machine Drag Curl","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 5 Tue","subtitle":"Chest & Triceps","wk":5,"day":"TUE","exercises":["Incline Dumbell Press","Seated Plate Loaded Chest Press","Pec Dec","Decline Barbell Press","Chest Contraction","Dumbell Pullover","Smith Machine Flat Press","Skull Crusher","Bench Tricep Dips","Machine Tricep Extension","Cable Rope Trceip Pulldown"]},{"kind":"weights","title":"Week 5 Wed","subtitle":"Quads & Hamstrings","wk":5,"day":"WED","exercises":["Smith Machine Squat","Dumbell Straight Leg Deadlift","Single Leg Press","Standing Single Leg Hamstring Curl","Single Leg Extension","Lying Hamstring Curl","Aductor","Abductor","Walking Lunges"]},{"kind":"weights","title":"Week 5 Thu","subtitle":"Shoulders & Calves","wk":5,"day":"THU","exercises":["Single Arm Dumbell Press","Smith Machine Press","Pec Dec Rear Fly","Dumbell Lateral Raise","Dumbell Shrug","Single Arm Cable Front Raise","Cable Front Raise (Both Shoulders)","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 5 Fri","subtitle":"Biceps & Triceps","wk":5,"day":"FRI","exercises":["Seated EZ Barbell Skull Crush","Plate Loaded Tricep Dip Machine","Overhead Cable Tricep Extension","Dumbell Hammer Curl","Straight Barbell Curl","Rope Hammer Curl","Dumbell Preacher Curl","Tricep Rope Extension"]},{"kind":"weights","title":"Week 5 Sun","subtitle":"Abs & Calves","wk":5,"day":"SUN","exercises":["Incline Sit Ups","Standing Weighted Crunch","Cable Wood Chop","Plank","Bench Leg Raises","Rope Cable Weighted Crunch","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 6 Mon","subtitle":"Back & Biceps","wk":6,"day":"MON","exercises":["Wide Grip Lat Pulldown","V Bar Seated Row","Iso-Lateral High Raise Row","Plate Loaded Seated T Bar Row","Iso-Lateral Low Row","Hyper Extension","Machine Overhead Lat Pulldown","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 6 Tue","subtitle":"Chest & Triceps","wk":6,"day":"TUE","exercises":["Barbell Bench Press","Seated Machine Chest Press","Incline Bench Cable Fly","Incline Dumbell Pullover","Peck Deck Machine","Incline Dumbell Press","Chest Dips","Weighted Tricep Dips","Dumbell Skull Crush","Cable Rope Tricep Extension","Seated Tricep Dips"]},{"kind":"weights","title":"Week 6 Wed","subtitle":"Quads & Hamstrings","wk":6,"day":"WED","exercises":["Smith Machine Squat","Weighted Lunges (Squat Rack)","Sissy Squat","Leg Extension","Seated Hamstring Curl","Dumbell Straight Leg Deadlift","Lying Hamstring Curl"]},{"kind":"weights","title":"Week 6 Thu","subtitle":"Shoulders & Calves","wk":6,"day":"THU","exercises":["Plate Raises","Cable Rope Overhead Extension","Dumbell Side Lateral Raise","Shoulder Press","Smith Machine Reverse Shrug","Smith Machine Military Press","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 6 Fri","subtitle":"Biceps & Triceps","wk":6,"day":"FRI","exercises":["Rope Tricep Pulldown","Wide Grip Tricep Pushdown","60 Second Tricep Tensing","EZ Barbell Skull Crush","Single Arm Cable Pushdown","Tricep Bench Dips","Single Arm Cable Curl","EZ Barbell Curl","Dumbell Hammer Curl","Cable Rope Hammer Curl","Smith Machine Drag Curl"]},{"kind":"weights","title":"Week 6 Sun","subtitle":"Abs & Calves","wk":6,"day":"SUN","exercises":["Hanging Leg Raise","Cable Wood Chop","TRX Side Crunches","Weighted Cable Rope Crunch","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 7 Mon","subtitle":"Back & Biceps","wk":7,"day":"MON","exercises":["V Bar Lat Pulldown","Standing T-Bar Row","Rack Deadlift","Single Arm Dumbell Row","Seated Machine Overhand Row","Seated Machine Hyper Extension","Barbell Bicep Curl","Single Arm Dumbell Curl","EZ Bar Cable Curl","Weighted Machine Curl","Smith Machine Drag Curl"]},{"kind":"weights","title":"Week 7 Tue","subtitle":"Chest & Triceps","wk":7,"day":"TUE","exercises":["Barbell Bench Press","Seated Machine Press","Incline Bench Cable Fly","Pec-Deck Machine","Incline Dumbell Pullover","Flat Bench Dumbell Press","Rope Cable Pulldown","Dumbell Skull Crush","Machine Tricep Extension","Bench Tricep Dips","EZ Bar Cable Pushdown"]},{"kind":"weights","title":"Week 7 Wed","subtitle":"Quads & Hamstrings","wk":7,"day":"WED","exercises":["Front Squats (Squat Rack)","Dumbell Lunge","Weighted Sled Push","Kettle Bell One-Legged Deadlift","Single Leg Standing Hamstring Curl","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 7 Thu","subtitle":"Shoulders & Calves","wk":7,"day":"THU","exercises":["Seated Dumbell Bent Over Delt Raise","Seated Barbell Military Press","Front Cable Raise","Reverse Machine Flyes","Upright Cable Row","Side Lateral Raise","Reverse Smith Machine Shrugs","Seated Dumbell Shrugs","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 7 Fri","subtitle":"Biceps & Triceps","wk":7,"day":"FRI","exercises":["Underhand Single Arm Cable Extension","Overhand Single Arm Cable Extension","Wide Grip EZ Bar Cable Pushdown","Front Dip Machine","EZ Bar Curl","Single Arm Dumbell Curl","Single Arm Overhead Cable Curl","Preacher Curl","Skull Crushers","Hammer Curl"]},{"kind":"weights","title":"Week 7 Sun","subtitle":"Abs & Calves","wk":7,"day":"SUN","exercises":["Hanging Leg Raise","Weighted Cable Crunch","Machine Assisted Oblique Twist","Weighted Sit Ups","Twisted Knee Raises","TRX Machine Crunches","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 8 Mon","subtitle":"Back & Biceps","wk":8,"day":"MON","exercises":["Barbell Deadlift","Wide Grip Pull Up","Standing T-Bar Row","V-Bar Seated Row","Hyper Extension","Overhand Machine Row","Standing Cable Face Curls","Single Arm Dumbell Hammer Curls","Dumbell Spider Curls"]},{"kind":"weights","title":"Week 8 Tue","subtitle":"Chest & Triceps","wk":8,"day":"TUE","exercises":["Barbell Bench Press","Weighted Pushup","Cable Fly","Incline Dumbell Bench Press","Dumbell Pullover","Seated Machine Chest Press","Chest Dips","Rope Cable Push Down","Dumbell Skull Crush","Tricep Squeeze and Contraction","Reverse Grip Pushdown","Overhead Cable Extension","Diamond Push Ups"]},{"kind":"weights","title":"Week 8 Wed","subtitle":"Quads & Hamstrings","wk":8,"day":"WED","exercises":["Goblet Squat","Barbell Lunge","Leg Press","Lying Hamstring Curl","Stiff Leg Dumbell Deadlift","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 8 Thu","subtitle":"Shoulders & Calves","wk":8,"day":"THU","exercises":["Standing Front Barbell Raise","Seated Bent Over Dumbell Delt Raise","Machine Shoulder Press","Pec Dec Rear Flys","Machine Cable Side Lateral Raise","Cable Rope Face Pulls","Smith Machine Standing Calf Raise","Seated Machine Calf Press","Seated Calf Raise"]},{"kind":"weights","title":"Week 8 Fri","subtitle":"Biceps & Triceps","wk":8,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 8 Sun","subtitle":"Abs & Calves","wk":8,"day":"SUN","exercises":["Machine Oblique Twists","Hanging Leg Raise","Cable Rope Ab Crunch","Weighted Sit Ups","Plank","Seated Calf Press","Plate Loaded Seated Calf Raise","Smith Machine Calf Raise"]},{"kind":"weights","title":"Week 9 Mon","subtitle":"Back & Biceps","wk":9,"day":"MON","exercises":["Seated T-Bar Row","Hyper Extension","Close Grip Pull Down","Wide Grip Seated Cable Row","Machine Assisted Lower Back Extension","Single Arm Smith Machine Row","Wide Grip Pull Up","Stiff Arm Pull Down","Hammer Curl","Straight Bar Cable Curl","Isolation Curl","Dumbell Curl"]},{"kind":"weights","title":"Week 9 Tue","subtitle":"Chest & Triceps","wk":9,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Chest Dips","Pushups","Weighted Tricep Dip","Single Cable Pushdown","Machine Tricep Extension","Tricep Smith Machine Press"]},{"kind":"weights","title":"Week 9 Wed","subtitle":"Quads & Hamstrings","wk":9,"day":"WED","exercises":["Smith Machine Squat","Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 9 Thu","subtitle":"Shoulders & Calves","wk":9,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Calf Raise","Seated Calf Raise"]},{"kind":"weights","title":"Week 9 Fri","subtitle":"Biceps & Triceps","wk":9,"day":"FRI","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers","Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 9 Sun","subtitle":"Abs & Calves","wk":9,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 10 Mon","subtitle":"Back & Biceps","wk":10,"day":"MON","exercises":["Wide Grip Pull Up","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Machine Assisted Lower Back Extension","Wide Grip Lat Pull Down","Seated Closed Grip Row","Cable Rope Pullover","Bent Over Barbell Row (Underhand)","Concentration Dumbell Curls","Preacher Dumbell Hammer Curls","EZ Bar Preacher Curls","EZ Bar Drag Curl","Cable Rope Curl"]},{"kind":"weights","title":"Week 10 Tue","subtitle":"Chest & Triceps","wk":10,"day":"TUE","exercises":["Pec Dec","Seated Incline Machine Press","Incline Bench Cable Fly","Incline Dumbell Pullover","Incline Single Arm Dumbell Press","Flat Machine Press","EZ Bar Skull Crush","EZ Bar Underhand Cable Pull Down","Tricep Squeeze and Contraction","EZ Bar Overhand Cable Pull Down","Cable Rope Pull Down"]},{"kind":"weights","title":"Week 10 Wed","subtitle":"Quads & Hamstrings","wk":10,"day":"WED","exercises":["Lunges","Sled Push","Single Standing Hamstring Curl","Leg Press","Lying Hamstring Curl","Single Leg Extension","Aductors"]},{"kind":"weights","title":"Week 10 Thu","subtitle":"Shoulders & Calves","wk":10,"day":"THU","exercises":["Military Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Single Dumbell Press","Standing Cable Front Raise","Dumbell Front Raise","Dumbell Lateral Raise","Seated Calf Press","Plate Loaded Seated Calf Raise"]},{"kind":"weights","title":"Week 10 Fri","subtitle":"Biceps & Triceps","wk":10,"day":"FRI","exercises":["Seated Tricep Extension Machine","Lyng Single Arm Dumbell Skull Crush","Seated Dumbell Skull Crush","Overhead Rope Cable Extension","Seated Machine Dips","Overhand Barbell Curl","Cable Curl Face Pulls","Single Arm Cable Curl Face Pulls","Plate Hammer Curls","Bicep Squeeze and Contraction"]},{"kind":"weights","title":"Week 10 Sun","subtitle":"Abs & Calves","wk":10,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 11 Mon","subtitle":"Back & Biceps","wk":11,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Iso-Lateral Low Row","Hammer Curl","Straight Bar Cable Curl","Isolation Curl"]},{"kind":"weights","title":"Week 11 Tue","subtitle":"Chest & Triceps","wk":11,"day":"TUE","exercises":["Incline Dumbell Press","Seated Plate Loaded Chest Press","Pec Dec","Dumbell Pullover","Smith Machine Flat Press","Decline Barbell Press","Chest Contraction","Weighted Tricep Dip","Single Cable Pushdown","Single Arm Dumbell Skull Crush","Bench Dips","Tricep Squeeze and Contraction"]},{"kind":"weights","title":"Week 11 Wed","subtitle":"Quads & Hamstrings","wk":11,"day":"WED","exercises":["Lying Hamstring Curl","Squats (Free Standing Squat Rack)","Seated Hamstring Curl","Leg Extension","Barbell Lunges","Aductors"]},{"kind":"weights","title":"Week 11 Thu","subtitle":"Shoulders & Calves","wk":11,"day":"THU","exercises":["Military Press","Barbell Front Raise","Cable Rear Fly","Machine Lateral Raise","Barbell Shrugs","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Seated Calf Machine Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 11 Fri","subtitle":"Biceps & Triceps","wk":11,"day":"FRI","exercises":["Seated EZ Barbell Skull Crush","Plate Loaded Tricep Dip Machine","Overhead Cable Tricep Extension","Dumbell Hammer Curl","Straight Barbell Curl","Rope Hammer Curl","Dumbell Preacher Curl","Tricep Rope Extension"]},{"kind":"weights","title":"Week 11 Sun","subtitle":"Abs & Calves","wk":11,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 12 Mon","subtitle":"Back & Biceps","wk":12,"day":"MON","exercises":["Barbell Deadlift","Wide Grip Pull Up","Standing T-Bar Row","V-Bar Seated Row","Hyper Extension","Overhand Machine Row","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 12 Tue","subtitle":"Chest & Triceps","wk":12,"day":"TUE","exercises":["Incline Barbell Press","Flat Dumbell Press","Pec Dec Fly","Decline Barbell Press","Incline Dumbell Press","Cable Fly","Weighted Tricep Dips","Tricep Smith Machine Press","Rope Pushdown","Machine Tricep Dips"]},{"kind":"weights","title":"Week 12 Wed","subtitle":"Quads & Hamstrings","wk":12,"day":"WED","exercises":["Weighted Lunges (Squat Rack)","Sissy Squat","Seated Hamstring Curl","Dumbell Straight Leg Deadlift","Lying Hamstring Curl"]},{"kind":"weights","title":"Week 12 Thu","subtitle":"Shoulders & Calves","wk":12,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Plate Loaded Seated Calve Raise","Calve Machine Press","Standing Calve Raise"]},{"kind":"weights","title":"Week 12 Fri","subtitle":"Biceps & Triceps","wk":12,"day":"FRI","exercises":["Underhand Single Arm Cable Extension","Overhand Single Arm Cable Extension","Wide Grip EZ Bar Cable Pushdown","Front Dip Machine","EZ Bar Curl","Single Arm Dumbell Curl","Single Arm Overhead Cable Curl","Preacher Curl","Skull Crushers","Hammer Curl"]},{"kind":"weights","title":"Week 12 Sun","subtitle":"Abs & Calves","wk":12,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 13 Mon","subtitle":"Back & Biceps","wk":13,"day":"MON","exercises":["Wide Grip Pull Up","Closed Grip Pull Up","Underhand Machine Row","V Bar Seated Row","Seated Machine Hyper Extension","Overhand Machine Row","Cable Rope Pull Over","Single Dumbell Bicep Curl","Seated Isolated Bicep Curl","Smith Machine Drag Curl","Single Arm Hammer Curl"]},{"kind":"weights","title":"Week 13 Tue","subtitle":"Chest & Triceps","wk":13,"day":"TUE","exercises":["Incline Dumbell Pullover","Incline Single Arm Dumbell Press","Flat Machine Press","Rope Cable Pulldown","Dumbell Skull Crush","Machine Tricep Extension","Bench Tricep Dips"]},{"kind":"weights","title":"Week 13 Wed","subtitle":"Quads & Hamstrings","wk":13,"day":"WED","exercises":["Goblet Squat","Barbell Lunge","Leg Press","Lying Hamstring Curl","Stiff Leg Dumbell Deadlift","Seated Hamstring Curl"]},{"kind":"weights","title":"Week 13 Thu","subtitle":"Shoulders & Calves","wk":13,"day":"THU","exercises":["Single Arm Dumbell Press","Smith Machine Press","Pec Dec Rear Fly","Dumbell Lateral Raise","Dumbell Shrug","Single Arm Cable Front Raise","Cable Front Raise (Both Shoulders)","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 13 Fri","subtitle":"Biceps & Triceps","wk":13,"day":"FRI","exercises":["EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 13 Sun","subtitle":"Abs & Calves","wk":13,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 14 Mon","subtitle":"Back & Biceps","wk":14,"day":"MON","exercises":["Wide Grip Lat Pulldown","Plate Loaded Seated Row","Lying T-Bar Row","Hyper Extension","Single Arm Dumbell Row","Closed Grip Cable Row","Standing Cable Face Curls","Single Arm Dumbell Hammer Curls","Dumbell Spider Curls"]},{"kind":"weights","title":"Week 14 Tue","subtitle":"Chest & Triceps","wk":14,"day":"TUE","exercises":["Closed Grip Tricep Smith Machine Press","Machine Preacher Curl","EZ Barbell Skull Crushers"]},{"kind":"weights","title":"Week 14 Wed","subtitle":"Quads & Hamstrings","wk":14,"day":"WED","exercises":["Smith Machine Squat","Lying Hamstring Curl","Standing Hamstring Curl","Leg Press","Leg Extension","Aductors"]},{"kind":"weights","title":"Week 14 Thu","subtitle":"Shoulders & Calves","wk":14,"day":"THU","exercises":["Dumbell Press","Side Lateral Raise (Machine)","Reverse Fly (Pec Dec)","Smith Machine Shrug","Dumbell Front Raise","Dumbell Lateral Raise","Standing Smith Machine Calf Raise","Standing Smith Machine Calf Raise","Single Calf Raise Own Body Weight"]},{"kind":"weights","title":"Week 14 Fri","subtitle":"Biceps & Triceps","wk":14,"day":"FRI","exercises":["EZ Bar Cable Curl","Dumbell Curls","Smith Machine Drag Curl","Tricep Dumbell Kickbacks","Dumbell Hammer Curl"]},{"kind":"weights","title":"Week 14 Sun","subtitle":"Abs & Calves","wk":14,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 15 Mon","subtitle":"Back & Biceps","wk":15,"day":"MON","exercises":["Wide Grip Lat Pulldown","Hyper Extension","Overhand Machine Row","Underhand Bent Over Row","Wide Grip Lat Pull Down","Seated Closed Grip Row","Dumbell Curl","Seated Bicep Curl","Hammer Dumbell Curl","EZ Barbell Curl"]},{"kind":"weights","title":"Week 15 Tue","subtitle":"Chest & Triceps","wk":15,"day":"TUE","exercises":["Seated Incline Machine Press","Tricep Dips","Closed Grip EZ Bar Cable Pushdown","Wide Grip EZ Bar Cable Pushdown","Seated Tricep Extension"]},{"kind":"weights","title":"Week 15 Wed","subtitle":"Quads & Hamstrings","wk":15,"day":"WED","exercises":["Smith Machine Squat","Dumbell Lunges","Single Leg Extension","Seated Hamstring Curl","Leg Press","Dumbell Straight Leg Deadlift"]},{"kind":"weights","title":"Week 15 Thu","subtitle":"Shoulders & Calves","wk":15,"day":"THU","exercises":["Plate Raises","Pec Dec Rear Fly","Dumbell Side Lateral Raise","Smith Machine Press","Smith Machine Reverse Shrug","Cable Rope Face Pull","Barbell Seated Calf Raise","Smith Machine Seated Calf Raise","Standing Barbell Calf Raise"]},{"kind":"weights","title":"Week 15 Fri","subtitle":"Biceps & Triceps","wk":15,"day":"FRI","exercises":["Closed Grip Pull Up","Seated Dumbell Curl","Smith Machine Drag Curl","Overhead Cable Extension"]},{"kind":"weights","title":"Week 15 Sun","subtitle":"Abs & Calves","wk":15,"day":"SUN","exercises":["Leg Extension","Hamstring Curl","Smith Machine Standing Calve Raise","Leg Press","Lying Hamstring Curl","Seated Calve Raise","Lat Pull Down","Seated Row","Barbell Shoulder Press","Dumbell Side Lateral Raise","Flat Barbell Press","Cable Fly","Dumbell Curl","Machine Preacher Curl","Tricep Dips","Rope Cable Pushdown","Abdominal Weighted Crunch","Hanging Leg Raise"]},{"kind":"weights","title":"Week 16 Mon","subtitle":"Back & Biceps","wk":16,"day":"MON","exercises":["Dumbell Shoulder Press","Lat Pull Down","Flat Dumbell Press","Machine Lateral Raise","Seated Row","Incline Barbell Press"]},{"kind":"weights","title":"Week 16 Tue","subtitle":"Chest & Triceps","wk":16,"day":"TUE","exercises":["Cable Rear Delt Fly","Bent Over Barbell Row","Cable Flyes","Cable Curl","Rope Pushdown"]},{"kind":"weights","title":"Week 16 Wed","subtitle":"Quads & Hamstrings","wk":16,"day":"WED","exercises":["EZ Bar Curl","Tricep Extension","Squats","Leg Press","Leg Extensions","Lunges"]},{"kind":"weights","title":"Week 16 Thu","subtitle":"Shoulders & Calves","wk":16,"day":"THU","exercises":["Lying Leg Curl","Seated Hamstring Curl","Stiff Leg Deadlift","Lunges","Seated Calf Raise","Smith Machine Calf Raises","Single Leg Calf Raise","Leg Press Calf Raise"]},{"kind":"weights","title":"Week 16 Sun","subtitle":"Abs & Calves","wk":16,"day":"SUN","exercises":["Rest Day"]}],"runnaSessions":[{"kind":"runna","title":"Strong Foundation","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Glute Bridge into Hamstring Walkout","Clam Shells","Squat to Calf Raise","Side Leg Swings"]},{"sets":4,"exercises":["Single Leg Squat"]},{"sets":2,"exercises":["Step Down"]},{"sets":2,"exercises":["Staggered Stance RDLs","Double Arm Clean"]},{"sets":2,"exercises":["Step Up and Knee Drive","Side Plank Leg Raise"]},{"sets":2,"exercises":["Plank Twist","Loaded Walking Calf Raises"]}]},{"kind":"runna","title":"Stronger Upper Body","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Press Up Position Walk Out","Floating Heel Drop","Mountain Climber","Bear Crawl"]},{"sets":2,"exercises":["Single Arm Row","Single Arm Clean"]},{"sets":2,"exercises":["Seated Barbell Press","Single Arm Bench Press"]},{"sets":2,"exercises":["Lunge and Press","Diagonal Toe Tap"]},{"sets":3,"exercises":["Press-Up Position with Single Arm Extensions","Side Plank Leg Raise"]}]},{"kind":"runna","title":"Going Heavy","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Heel Walks","Travelling Press Up Walk out","Side Lunge","Press Up"]},{"sets":2,"exercises":["Reverse Lunge","Reverse Fly"]},{"sets":2,"exercises":["KB Swings","Lunge Hold Calf Raise"]},{"sets":2,"exercises":["Standing Side Raise","Barbell Hip Thrust"]},{"sets":2,"exercises":["Standing Side Bend","Short Lever Copenhagen Plank"]}]},{"kind":"runna","title":"Lower Body Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Step Up","Travelling Press Up Walk out","Squat to Calf Raise","Floating Heel Drop"]},{"sets":2,"exercises":["Barbell Hip Thrust","Pogo Jumps"]},{"sets":2,"exercises":["Static Lunge","Short Lever Copenhagen Plank"]},{"sets":2,"exercises":["KB Swings","Farmer's Carry"]},{"sets":2,"exercises":["Standing Side Bend","Lunge and Press"]}]},{"kind":"runna","title":"Building Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Lunge Hold Calf Raise","Press Up Position Diagonal Toe Tap","Glute Bridge into Hamstring Walkout","Mountain Climber"]},{"sets":3,"exercises":["Staggered Stance RDLs"]},{"sets":3,"exercises":["Standing Single Arm Shoulder Press"]},{"sets":2,"exercises":["Staggered Stance (B-Stance) Hip Thrusts","Barbell Bench Press"]},{"sets":2,"exercises":["Sumo Deadlift","Single Arm Clean and Press"]},{"sets":2,"exercises":["Plank Twist","Double Leg Skipping"]}]},{"kind":"runna","title":"Upper Body Strength","subtitle":"Runna","blocks":[{"sets":3,"exercises":["Press Up Position Walk Out","Heel Walks","Press Up","Diagonal Toe Tap"]},{"sets":2,"exercises":["Push Press"]},{"sets":2,"exercises":["Single Arm Bench Press"]},{"sets":2,"exercises":["Roll Down","Thruster"]},{"sets":2,"exercises":["Tricep Dip","Side Plank"]},{"sets":3,"exercises":["Side Plank with Hip Flexion","Russian Twist"]}]},{"kind":"runna","title":"Legs & Core Strength","subtitle":"Runna","blocks":[{"sets":2,"exercises":["Bodyweight Squat","Bear Crawl","Side Leg Swings","Toe Walks"]},{"sets":3,"exercises":["Barbell Squat","Box Jump Down to Tuck Jump"]},{"sets":3,"exercises":["Single Leg Straight Leg Deadlift with Knee Drive","Single Leg Calf Raise"]},{"sets":2,"exercises":["Step Down","Box Jump"]},{"sets":2,"exercises":["Crunch and Press","Hanging Knee Raise"]}]}],"hillsSessions":[{"kind":"hills","title":"Lower Body \u2013 Heavy Strength & Mass","subtitle":"Monday \u00b7 Legs (Mass)","day":"MON","items":[{"name":"Barbell Back Squats","sets":4,"target":"6\u20138"},{"name":"Romanian Deadlifts (RDLs)","sets":3,"target":"8\u201310"},{"name":"Leg Press","sets":3,"target":"10\u201312"},{"name":"Seated Calf Raises","sets":4,"target":"15"}]},{"kind":"hills","title":"Upper Body \u2013 Push","subtitle":"Tuesday \u00b7 Chest, Shoulders, Triceps","day":"TUE","items":[{"name":"Incline Dumbbell Bench Press","sets":4,"target":"8\u201310"},{"name":"Seated Overhead Barbell Press","sets":3,"target":"8\u201310"},{"name":"Dips (Weighted if possible)","sets":3,"target":"8\u201312"},{"name":"Lateral Dumbbell Raises","sets":3,"target":"12\u201315"},{"name":"Tricep Rope Pushdowns","sets":3,"target":"12"}]},{"kind":"hills","title":"Lower Body \u2013 Unilateral Power & Stamina","subtitle":"Thursday \u00b7 Single-leg Power","day":"THU","items":[{"name":"Bulgarian Split Squats","sets":3,"target":"8\u201310 /leg"},{"name":"Walking Dumbbell Lunges","sets":3,"target":"12 steps"},{"name":"Leg Curls (Machine)","sets":3,"target":"10\u201312"},{"name":"Standing Calf Raises","sets":3,"target":"12"},{"name":"Hanging Knee Raises","sets":3,"target":"max"}]},{"kind":"hills","title":"Upper Body \u2013 Pull","subtitle":"Friday \u00b7 Back & Biceps","day":"FRI","items":[{"name":"Pull-Ups or Lat Pulldowns","sets":4,"target":"8\u201310"},{"name":"Barbell Bent-Over Rows","sets":3,"target":"8\u201310"},{"name":"Seated Cable Rows","sets":3,"target":"10\u201312"},{"name":"Incline Dumbbell Bicep Curls","sets":3,"target":"10\u201312"},{"name":"Hammer Curls","sets":3,"target":"12"}]}],"sequence":[{"type":"runna","idx":0},{"type":"weights","idx":0},{"type":"runna","idx":1},{"type":"weights","idx":1},{"type":"runna","idx":2},{"type":"weights","idx":2},{"type":"runna","idx":3},{"type":"weights","idx":3},{"type":"runna","idx":4},{"type":"weights","idx":4},{"type":"runna","idx":5},{"type":"weights","idx":5},{"type":"runna","idx":6},{"type":"weights","idx":6},{"type":"runna","idx":0},{"type":"weights","idx":7},{"type":"runna","idx":1},{"type":"weights","idx":8},{"type":"runna","idx":2},{"type":"weights","idx":9},{"type":"runna","idx":3},{"type":"weights","idx":10},{"type":"runna","idx":4},{"type":"weights","idx":11},{"type":"runna","idx":5},{"type":"weights","idx":12},{"type":"runna","idx":6},{"type":"weights","idx":13},{"type":"runna","idx":0},{"type":"weights","idx":14},{"type":"runna","idx":1},{"type":"weights","idx":15},{"type":"runna","idx":2},{"type":"weights","idx":16},{"type":"runna","idx":3},{"type":"weights","idx":17},{"type":"runna","idx":4},{"type":"weights","idx":18},{"type":"runna","idx":5},{"type":"weights","idx":19},{"type":"runna","idx":6},{"type":"weights","idx":20},{"type":"runna","idx":0},{"type":"weights","idx":21},{"type":"runna","idx":1},{"type":"weights","idx":22},{"type":"runna","idx":2},{"type":"weights","idx":23},{"type":"runna","idx":3},{"type":"weights","idx":24},{"type":"runna","idx":4},{"type":"weights","idx":25},{"type":"runna","idx":5},{"type":"weights","idx":26},{"type":"runna","idx":6},{"type":"weights","idx":27},{"type":"runna","idx":0},{"type":"weights","idx":28},{"type":"runna","idx":1},{"type":"weights","idx":29},{"type":"runna","idx":2},{"type":"weights","idx":30},{"type":"runna","idx":3},{"type":"weights","idx":31},{"type":"runna","idx":4},{"type":"weights","idx":32},{"type":"runna","idx":5},{"type":"weights","idx":33},{"type":"runna","idx":6},{"type":"weights","idx":34},{"type":"runna","idx":0},{"type":"weights","idx":35},{"type":"runna","idx":1},{"type":"weights","idx":36},{"type":"runna","idx":2},{"type":"weights","idx":37},{"type":"runna","idx":3},{"type":"weights","idx":38},{"type":"runna","idx":4},{"type":"weights","idx":39},{"type":"runna","idx":5},{"type":"weights","idx":40},{"type":"runna","idx":6},{"type":"weights","idx":41},{"type":"runna","idx":0},{"type":"weights","idx":42},{"type":"runna","idx":1},{"type":"weights","idx":43},{"type":"runna","idx":2},{"type":"weights","idx":44},{"type":"runna","idx":3},{"type":"weights","idx":45},{"type":"runna","idx":4},{"type":"weights","idx":46},{"type":"runna","idx":5},{"type":"weights","idx":47},{"type":"runna","idx":6},{"type":"weights","idx":48},{"type":"runna","idx":0},{"type":"weights","idx":49},{"type":"runna","idx":1},{"type":"weights","idx":50},{"type":"runna","idx":2},{"type":"weights","idx":51},{"type":"runna","idx":3},{"type":"weights","idx":52},{"type":"runna","idx":4},{"type":"weights","idx":53},{"type":"runna","idx":5},{"type":"weights","idx":54},{"type":"runna","idx":6},{"type":"weights","idx":55},{"type":"runna","idx":0},{"type":"weights","idx":56},{"type":"runna","idx":1},{"type":"weights","idx":57},{"type":"runna","idx":2},{"type":"weights","idx":58},{"type":"runna","idx":3},{"type":"weights","idx":59},{"type":"runna","idx":4},{"type":"weights","idx":60},{"type":"runna","idx":5},{"type":"weights","idx":61},{"type":"runna","idx":6},{"type":"weights","idx":62},{"type":"runna","idx":0},{"type":"weights","idx":63},{"type":"runna","idx":1},{"type":"weights","idx":64},{"type":"runna","idx":2},{"type":"weights","idx":65},{"type":"runna","idx":3},{"type":"weights","idx":66},{"type":"runna","idx":4},{"type":"weights","idx":67},{"type":"runna","idx":5},{"type":"weights","idx":68},{"type":"runna","idx":6},{"type":"weights","idx":69},{"type":"runna","idx":0},{"type":"weights","idx":70},{"type":"runna","idx":1},{"type":"weights","idx":71},{"type":"runna","idx":2},{"type":"weights","idx":72},{"type":"runna","idx":3},{"type":"weights","idx":73},{"type":"runna","idx":4},{"type":"weights","idx":74},{"type":"runna","idx":5},{"type":"weights","idx":75},{"type":"runna","idx":6},{"type":"weights","idx":76},{"type":"runna","idx":0},{"type":"weights","idx":77},{"type":"runna","idx":1},{"type":"weights","idx":78},{"type":"runna","idx":2},{"type":"weights","idx":79},{"type":"runna","idx":3},{"type":"weights","idx":80},{"type":"runna","idx":4},{"type":"weights","idx":81},{"type":"runna","idx":5},{"type":"weights","idx":82},{"type":"runna","idx":6},{"type":"weights","idx":83},{"type":"runna","idx":0},{"type":"weights","idx":84},{"type":"runna","idx":1},{"type":"weights","idx":85},{"type":"runna","idx":2},{"type":"weights","idx":86},{"type":"runna","idx":3},{"type":"weights","idx":87},{"type":"runna","idx":4},{"type":"weights","idx":88},{"type":"runna","idx":5},{"type":"weights","idx":89},{"type":"runna","idx":6},{"type":"weights","idx":90},{"type":"runna","idx":0},{"type":"weights","idx":91},{"type":"runna","idx":1},{"type":"weights","idx":92},{"type":"runna","idx":2},{"type":"weights","idx":93},{"type":"runna","idx":3},{"type":"weights","idx":94},{"type":"hills","idx":0},{"type":"hills","idx":1},{"type":"hills","idx":2},{"type":"hills","idx":3}]};
+const WS = DATA.weightSessions, RS = DATA.runnaSessions, HS = DATA.hillsSessions||[], SEQ = DATA.sequence;
 
 const EX_MODES_DEFAULT = {"Barbell Bench Press":"weight","Barbell Hip Thrust":"weight","Barbell Squat":"weight","Bear Crawl":"time","Bodyweight Squat":"reps","Box Jump":"reps","Box Jump Down to Tuck Jump":"reps","Clam Shells":"reps","Crunch and Press":"reps","Diagonal Toe Tap":"reps","Double Arm Clean":"weight","Double Leg Skipping":"reps","Farmer's Carry":"time","Floating Heel Drop":"reps","Glute Bridge into Hamstring Walkout":"reps","Hanging Knee Raise":"reps","Heel Walks":"time","KB Swings":"weight","Loaded Walking Calf Raises":"reps","Lunge Hold Calf Raise":"time","Lunge and Press":"weight","Mountain Climber":"time","Plank Twist":"time","Pogo Jumps":"reps","Press Up":"reps","Press Up Position Diagonal Toe Tap":"reps","Press Up Position Walk Out":"time","Press-Up Position with Single Arm Extensions":"reps","Push Press":"weight","Reverse Fly":"weight","Reverse Lunge":"reps","Roll Down":"reps","Russian Twist":"reps","Seated Barbell Press":"weight","Short Lever Copenhagen Plank":"time","Side Leg Swings":"reps","Side Lunge":"reps","Side Plank":"time","Side Plank Leg Raise":"time","Side Plank with Hip Flexion":"time","Single Arm Bench Press":"weight","Single Arm Clean":"weight","Single Arm Clean and Press":"weight","Single Arm Row":"weight","Single Leg Calf Raise":"reps","Single Leg Squat":"reps","Single Leg Straight Leg Deadlift with Knee Drive":"weight","Squat to Calf Raise":"reps","Staggered Stance (B-Stance) Hip Thrusts":"weight","Staggered Stance RDLs":"weight","Standing Side Bend":"reps","Standing Side Raise":"weight","Standing Single Arm Shoulder Press":"weight","Static Lunge":"reps","Step Down":"reps","Step Up":"reps","Step Up and Knee Drive":"reps","Sumo Deadlift":"weight","Thruster":"weight","Toe Walks":"time","Travelling Press Up Walk out":"time","Tricep Dip":"reps"};
 let exModeOverrides = {};  // user-chosen mode per exercise name
@@ -374,7 +379,7 @@ function exMode(name, kind){
   if(exModeOverrides[name]) return exModeOverrides[name];
   if(EX_MODES_DEFAULT[name]) return EX_MODES_DEFAULT[name];
   // weights-session exercises default to 'weight'; unknown runna default 'reps'
-  return kind==='weights' ? 'weight' : 'reps';
+  return (kind==='weights'||kind==='hills') ? 'weight' : 'reps';
 }
 function setExMode(name, mode){ exModeOverrides[name]=mode; saveModeOv(); buildLiveSession(true); renderLog(); }
 function saveModeOv(){ try{localStorage.setItem('rt_modeov',JSON.stringify(exModeOverrides));}catch(e){} }
@@ -389,10 +394,21 @@ function runnaLink(name){
   // Runna-scoped YouTube search — reliably surfaces the official Runna demo
   return 'https://www.youtube.com/results?search_query=' + encodeURIComponent('Runna ' + name);
 }
+function genericLink(name){
+  // generic YouTube search for the exercise technique
+  return 'https://www.youtube.com/results?search_query=' + encodeURIComponent(name + ' exercise technique');
+}
+function vidLinkFor(name, kind){
+  if(kind==='runna') return runnaLink(name);
+  if(kind==='hills') return genericLink(name);
+  return null;
+}
+function hasVid(kind){ return kind==='runna' || kind==='hills'; }
 
 
 let entries = [];
 let wOverrides = {};   // weights session edits keyed by weight-session idx
+let hOverrides = {};   // muscle-building (hills) session edits keyed by hills idx
 let homeIdx = 0;       // the session the user considers 'current'
 let curSeqIdx = 0;          // index into SEQ
 let view = 'log';           // 'log' | 'exercises' | 'manage'
@@ -407,6 +423,7 @@ function boot(){
   try{ const d=localStorage.getItem('rt_entries'); if(d) entries=JSON.parse(d); }catch(e){}
   try{ const s=localStorage.getItem('rt_seqidx'); if(s!=null) curSeqIdx=parseInt(s)||0; }catch(e){}
   try{ const o=localStorage.getItem('rt_woverrides'); if(o) wOverrides=JSON.parse(o); }catch(e){}
+  try{ const ho=localStorage.getItem('rt_hoverrides'); if(ho) hOverrides=JSON.parse(ho); }catch(e){}
   try{ const h=localStorage.getItem('rt_homeidx'); if(h!=null) homeIdx=parseInt(h)||0; }catch(e){}
   try{ const mo=localStorage.getItem('rt_modeov'); if(mo) exModeOverrides=JSON.parse(mo); }catch(e){}
   try{ const du=localStorage.getItem('rt_durations'); if(du) exDurations=JSON.parse(du); }catch(e){}
@@ -419,6 +436,7 @@ function boot(){
 function saveEntries(){ try{localStorage.setItem('rt_entries',JSON.stringify(entries));}catch(e){} }
 function saveSeq(){ try{localStorage.setItem('rt_seqidx',String(curSeqIdx));}catch(e){} }
 function saveOverrides(){ try{localStorage.setItem('rt_woverrides',JSON.stringify(wOverrides));}catch(e){} }
+function saveHOverrides(){ try{localStorage.setItem('rt_hoverrides',JSON.stringify(hOverrides));}catch(e){} }
 function saveHome(){ try{localStorage.setItem('rt_homeidx',String(homeIdx));}catch(e){} }
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
@@ -428,6 +446,15 @@ function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.
    weights sessions: each exercise becomes a block of {sets:4, exercises:[name]} default 4 sets
 */
 function resolveSession(seqEntry){
+  if(seqEntry.type==='hills'){
+    const hsx=HS[seqEntry.idx];
+    const ov=hOverrides[seqEntry.idx]||{};
+    const removed=ov.removed||[];
+    const setCounts=ov.setCounts||{};
+    const items=hsx.items.filter(it=>removed.indexOf(it.name)===-1);
+    return {kind:'hills', title:hsx.title, subtitle:hsx.subtitle, hIdx:seqEntry.idx,
+            blocks:items.map(it=>({sets:(setCounts[it.name]||it.sets), exercises:[it.name], target:it.target}))};
+  }
   if(seqEntry.type==='runna'){
     const r=RS[seqEntry.idx];
     return {kind:'runna', title:r.title, subtitle:r.subtitle, blocks:r.blocks.map(b=>({sets:b.sets, exercises:b.exercises.slice()}))};
@@ -462,7 +489,7 @@ function buildLiveSession(preserve){
   // preserve: if true, carry over any values already entered in the current liveSession
   const prevLive = (preserve && liveSession) ? liveSession : null;
   const sess=resolveSession(SEQ[curSeqIdx]);
-  const nl={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, blocks:[]};
+  const nl={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, hIdx:sess.hIdx, blocks:[]};
   // previous saved values for this exact programme (for pre-fill)
   const lastData = preserve ? null : lastSessionData(sess.title, sess.kind);
   sess.blocks.forEach((b,bi)=>{
@@ -491,7 +518,7 @@ function buildLiveSession(preserve){
         return {name, reps:'', weight:'', secs:(m==='time'?defaultDur(name):''), done:false};
       }));
     }
-    nl.blocks.push({sets, exercises:b.exercises.slice()});
+    nl.blocks.push({sets, exercises:b.exercises.slice(), target:b.target});
   });
   liveSession=nl;
 }
@@ -541,7 +568,7 @@ function renderProgress(){
 
 /* ── tabs ── */
 function showTab(t){
-  ['log','run','history','more','marathon'].forEach(x=>{
+  ['log','run','history','more'].forEach(x=>{
     document.getElementById('tab-'+x).classList.toggle('on',x===t);
     document.getElementById('nav-'+x).classList.toggle('on',x===t);
   });
@@ -549,7 +576,6 @@ function showTab(t){
   if(t==='log'){ if(prevTab!=='log'){ workoutScreen='home'; } renderLog(); }
   if(t==='run') renderRun();
   if(t==='more') renderMore();
-  if(t==='marathon') renderMarathon();
   prevTab=t;
 }
 
@@ -575,14 +601,18 @@ function renderHome(el){
   </div>`;
 
   // two big choose buttons
-  html+=`<div class="home-choose">
-    <button class="home-pick strength" onclick="openModalType('runna')">
-      <span class="home-pick-t">Strength Training</span>
-      <span class="home-pick-s">Runna workouts</span>
+  html+=`<div class="home-choose three">
+    <button class="home-pick hills" onclick="openModalType('hills')">
+      <span class="home-pick-t">Muscle Building</span>
+      <span class="home-pick-s">Bulk &amp; mass</span>
     </button>
     <button class="home-pick weight" onclick="openModalType('weights')">
       <span class="home-pick-t">Weight Training</span>
       <span class="home-pick-s">16-week plan</span>
+    </button>
+    <button class="home-pick strength" onclick="openModalType('runna')">
+      <span class="home-pick-t">Strength Training</span>
+      <span class="home-pick-s">Runna workouts</span>
     </button>
   </div>`;
 
@@ -601,7 +631,7 @@ function renderHome(el){
       html+=`<div class="home-recent" onclick="resumeSession(${idx})">
         <div class="home-recent-l">
           <span class="home-recent-t">${e.title}</span>
-          <span class="home-recent-s">${e.kind==='runna'?'Strength':'Weight'} \u00b7 last ${fmtDate(e.date)}</span>
+          <span class="home-recent-s">${e.kind==='runna'?'Strength':e.kind==='hills'?'Muscle Building':'Weight'} \u00b7 last ${fmtDate(e.date)}</span>
         </div>
         <span class="home-recent-go">\u203a</span>
       </div>`;
@@ -640,7 +670,7 @@ function renderLog(){
   /* hero card */
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag ${s.kind}">${isRunna?'Strength Training':'Weight Training'}</div>
+      <div class="hero-flag ${s.kind}">${s.kind==='runna'?'Strength Training':s.kind==='hills'?'Muscle Building':'Weight Training'}</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -655,10 +685,10 @@ function renderLog(){
   html+=`<div class="seg-toggle">
     <button class="${view==='exercises'?'on':''}" onclick="setView('exercises')">Exercises</button>
     <button class="${view==='log'?'on':''}" onclick="setView('log')">Log</button>`;
-  if(s.kind==='weights') html+=`<button class="${view==='manage'?'on':''}" onclick="setView('manage')">Manage</button>`;
+  if(s.kind==='weights'||s.kind==='hills') html+=`<button class="${view==='manage'?'on':''}" onclick="setView('manage')">Manage</button>`;
   html+=`</div>`;
 
-  if(view==='manage' && s.kind==='weights'){
+  if(view==='manage' && (s.kind==='weights'||s.kind==='hills')){
     renderManage(s);
     return;
   }
@@ -667,18 +697,19 @@ function renderLog(){
     s.blocks.forEach((b,bi)=>{
       const isSuper=b.exercises.length>1;
       html+=`<div class="exlist-block">
-        <div class="exlist-title">${b.sets.length} set${b.sets.length>1?'s':''}${isSuper?' \u00b7 superset':''}</div>`;
-      b.exercises.forEach(n=>{ const lk=(s.kind==='runna')?`<span class="ex-yt" onclick="openVid('${runnaLink(n).replace(/'/g,"\\'")}')">${n} <span class="yt-ic">\u25b6</span></span>`:n; html+=`<div class="exlist-item">${lk}</div>`; });
+        <div class="exlist-title">${b.sets.length} set${b.sets.length>1?'s':''}${b.target?' \u00b7 target '+b.target:''}${isSuper?' \u00b7 superset':''}</div>`;
+      b.exercises.forEach(n=>{ const lk=hasVid(s.kind)?`<span class="ex-yt" onclick="openVid('${vidLinkFor(n,s.kind).replace(/'/g,"\\'")}')">${n} <span class="yt-ic">\u25b6</span></span>`:n; html+=`<div class="exlist-item">${lk}</div>`; });
       html+=`</div>`;
     });
   } else {
     /* LOG view: each block, each set with input rows */
     s.blocks.forEach((b,bi)=>{
       const isSuper=b.exercises.length>1;
+      const tgt = b.target ? `<span class="block-target">target ${b.target}</span>` : '';
       html+=`<div class="block">
         <div class="block-hdr">
           <span class="block-title">${b.exercises.length>1?'Superset':b.exercises[0]}</span>
-          <span class="block-badge">${b.sets.length} SET${b.sets.length>1?'S':''}</span>
+          <span class="block-badge-wrap">${tgt}<span class="block-badge">${b.sets.length} SET${b.sets.length>1?'S':''}</span></span>
         </div>`;
 
       b.sets.forEach((setExs,si)=>{
@@ -708,7 +739,7 @@ function renderLog(){
         setExs.forEach((x,xi)=>{
           const mode=exMode(x.name, s.kind);
           const prev=prevFor(x.name);
-          const exLink = (s.kind==='runna') ? `<span class="ex-yt" onclick="event.stopPropagation();openVid('${runnaLink(x.name).replace(/'/g,"\\'")}')">${x.name} <span class="yt-ic">\u25b6</span></span>` : x.name;
+          const exLink = hasVid(s.kind) ? `<span class="ex-yt" onclick="event.stopPropagation();openVid('${vidLinkFor(x.name,s.kind).replace(/'/g,"\\'")}')">${x.name} <span class="yt-ic">\u25b6</span></span>` : x.name;
           const modeLabel = mode==='weight'?'kg':(mode==='time'?'time':'reps');
           let fields='';
           if(mode==='weight'){
@@ -770,12 +801,15 @@ function setView(v){ view=v; renderLog(); }
 
 function renderManage(s){
   const el=document.getElementById('log-content');
-  const wIdx=s.wIdx;
+  const isHills = s.kind==='hills';
+  const idx = isHills ? s.hIdx : s.wIdx;
+  const ovStore = isHills ? hOverrides : wOverrides;
+  const flagLabel = isHills ? 'Muscle Building' : 'Weight Training';
+  const flagClass = isHills ? 'hills' : 'weights';
   let html='';
-  // re-render hero + toggle (reuse simple header)
   html+=`<div class="session-hero">
     <div class="session-hero-tab">
-      <div class="hero-flag weights">Weight Training</div>
+      <div class="hero-flag ${flagClass}">${flagLabel}</div>
       <span class="hero-repeat">Session ${curSeqIdx+1}</span>
     </div>
     <div class="hero-body">
@@ -797,65 +831,70 @@ function renderManage(s){
     html+=`<div class="manage-item">
       <div class="manage-name">${name}</div>
       <div class="manage-ctrl">
-        <button class="step-btn" onclick="changeSets(${wIdx},'${name.replace(/'/g,"\\'")}',-1)">\u2212</button>
+        <button class="step-btn" onclick="changeSets('${s.kind}',${idx},'${name.replace(/'/g,"\\'")}',-1)">\u2212</button>
         <span class="step-val">${b.sets.length} set${b.sets.length>1?'s':''}</span>
-        <button class="step-btn" onclick="changeSets(${wIdx},'${name.replace(/'/g,"\\'")}',1)">+</button>
-        <button class="rm-btn" onclick="removeWeightEx(${wIdx},'${name.replace(/'/g,"\\'")}')">Remove</button>
+        <button class="step-btn" onclick="changeSets('${s.kind}',${idx},'${name.replace(/'/g,"\\'")}',1)">+</button>
+        <button class="rm-btn" onclick="removeEx('${s.kind}',${idx},'${name.replace(/'/g,"\\'")}')">Remove</button>
       </div>
     </div>`;
   });
 
-  if(wOverrides[wIdx] && (wOverrides[wIdx].removed||[]).length){
+  if(ovStore[idx] && (ovStore[idx].removed||[]).length){
     html+=`<p class="lbl">Removed</p>`;
-    wOverrides[wIdx].removed.forEach(n=>{
+    ovStore[idx].removed.forEach(n=>{
       html+=`<div class="manage-item removed">
         <div class="manage-name">${n}</div>
-        <button class="restore-btn" onclick="restoreWeightEx(${wIdx},'${n.replace(/'/g,"\\'")}')">Restore</button>
+        <button class="restore-btn" onclick="restoreEx('${s.kind}',${idx},'${n.replace(/'/g,"\\'")}')">Restore</button>
       </div>`;
     });
   }
 
-  html+=`<button class="btn btn-ghost" style="margin-top:14px" onclick="resetWeightSession(${wIdx})">Reset this session to original</button>`;
+  html+=`<button class="btn btn-ghost" style="margin-top:14px" onclick="resetManageSession('${s.kind}',${idx})">Reset this session to original</button>`;
   el.innerHTML=html;
 }
 
-function ensureOv(wIdx){
-  if(!wOverrides[wIdx]) wOverrides[wIdx]={removed:[],setCounts:{}};
-  if(!wOverrides[wIdx].removed) wOverrides[wIdx].removed=[];
-  if(!wOverrides[wIdx].setCounts) wOverrides[wIdx].setCounts={};
-  return wOverrides[wIdx];
+function ensureOv(kind,idx){
+  const store = kind==='hills' ? hOverrides : wOverrides;
+  if(!store[idx]) store[idx]={removed:[],setCounts:{}};
+  if(!store[idx].removed) store[idx].removed=[];
+  if(!store[idx].setCounts) store[idx].setCounts={};
+  return store[idx];
 }
+function persistOv(kind){ if(kind==='hills') saveHOverrides(); else saveOverrides(); }
 
-function changeSets(wIdx,name,delta){
-  const ov=ensureOv(wIdx);
-  const cur=ov.setCounts[name]||4;
+function changeSets(kind,idx,name,delta){
+  const ov=ensureOv(kind,idx);
+  // default per-exercise set count: hills uses its own default, weights uses 4
+  let base=4;
+  if(kind==='hills'){ try{ base=HS[idx].items.find(it=>it.name===name).sets; }catch(e){ base=3; } }
+  const cur=ov.setCounts[name]||base;
   const next=Math.min(Math.max(cur+delta,1),10);
   ov.setCounts[name]=next;
-  saveOverrides();
+  persistOv(kind);
   buildLiveSession();
   renderLog();
 }
 
-function removeWeightEx(wIdx,name){
-  const ov=ensureOv(wIdx);
+function removeEx(kind,idx,name){
+  const ov=ensureOv(kind,idx);
   if(ov.removed.indexOf(name)===-1) ov.removed.push(name);
-  saveOverrides();
+  persistOv(kind);
   buildLiveSession();
   renderLog();
   toast(name+' removed');
 }
 
-function restoreWeightEx(wIdx,name){
-  const ov=ensureOv(wIdx);
+function restoreEx(kind,idx,name){
+  const ov=ensureOv(kind,idx);
   ov.removed=ov.removed.filter(n=>n!==name);
-  saveOverrides();
+  persistOv(kind);
   buildLiveSession();
   renderLog();
 }
 
-function resetWeightSession(wIdx){
-  delete wOverrides[wIdx];
-  saveOverrides();
+function resetManageSession(kind,idx){
+  if(kind==='hills') delete hOverrides[idx]; else delete wOverrides[idx];
+  persistOv(kind);
   buildLiveSession();
   renderLog();
   toast('Session reset to original');
@@ -1135,13 +1174,27 @@ function closeModal(){ document.getElementById('modal').classList.remove('show')
 
 function setFilter(f){
   modalFilter=f;
-  ['runna','weights'].forEach(x=>document.getElementById('f-'+x).classList.toggle('on',x===f));
+  ['runna','weights','hills'].forEach(x=>{var b=document.getElementById('f-'+x); if(b) b.classList.toggle('on',x===f);});
   renderSessList();
 }
 
 function renderSessList(){
   const el=document.getElementById('sess-list');
   let html='';
+  if(modalFilter==='hills'){
+    HS.forEach((hx,hi)=>{
+      const seqIdx=SEQ.findIndex(sq=>sq.type==='hills' && sq.idx===hi);
+      const target=(seqIdx>=0?seqIdx:0);
+      html+=`<div class="sess-opt ${target===curSeqIdx?'on':''}" onclick="jumpTo(${target})">
+        <div class="sess-opt-l">
+          <span class="sess-opt-title">${hx.title}</span>
+          <span class="sess-opt-sub">${hx.subtitle}</span>
+        </div>
+        <span class="sess-opt-tag hills">Muscle</span>
+      </div>`;
+    });
+    el.innerHTML=html; return;
+  }
   if(modalFilter==='runna'){
     // Strength: show each of the 7 unique workouts once, numbered + named.
     RS.forEach((r,ri)=>{
@@ -1186,6 +1239,7 @@ function exportData(){
     _app:'BaaluFitness', _v:1, exportedAt:new Date().toISOString(),
     entries: entries,
     wOverrides: wOverrides,
+    hOverrides: hOverrides,
     exModeOverrides: exModeOverrides,
     exDurations: exDurations,
     homeIdx: homeIdx,
@@ -1217,12 +1271,13 @@ function importData(ev){
       if(!confirm('Restore this backup? It will replace your current data.')) return;
       entries = d.entries||[];
       wOverrides = d.wOverrides||{};
+      hOverrides = d.hOverrides||{};
       exModeOverrides = d.exModeOverrides||{};
       exDurations = d.exDurations||{};
       homeIdx = d.homeIdx||0;
       curSeqIdx = d.curSeqIdx||0;
       restDefault = (d.restDefault!=null?d.restDefault:60);
-      saveEntries(); saveOverrides(); saveModeOv(); saveDurations(); saveHome(); saveSeq(); saveRestDefault();
+      saveEntries(); saveOverrides(); saveHOverrides(); saveModeOv(); saveDurations(); saveHome(); saveSeq(); saveRestDefault();
       buildLiveSession();
       toast('Backup restored \u2713');
       renderHist();
@@ -1295,7 +1350,7 @@ function renderHistList(){
           <div><div class="hcard-name">${e.title}</div></div>
           <button class="del-btn" onclick="delEntry(${e.id})">\u00d7</button>
         </div>
-        <div class="hcard-meta">${e.kind==='runna'?'Strength Training':'Weight Training'} \u00b7 ${e.subtitle||''}</div>
+        <div class="hcard-meta">${e.kind==='runna'?'Strength Training':e.kind==='hills'?'Muscle Building':'Weight Training'} \u00b7 ${e.subtitle||''}</div>
         ${body}
       </div>`;
     }).join('')}
@@ -1638,361 +1693,8 @@ function calcPlates(){
 }
 
 
+
 boot();
-</script>
-<script>
-/* ================= BAALU MARATHON PREP =================
-   Self-contained. Own localStorage key (rt_marathon).
-   Core plan = runs + two lifts. Swim/cycle optional (never counted).
-   v3 adds run logging: distance + time -> pace + treadmill speed. */
-(function(){
-  var css = `
-  .mar-wrap{padding-bottom:8px}
-  .mar-hero{background:var(--navy);color:#fff;border-radius:var(--rl);padding:18px 18px 16px;margin-bottom:14px}
-  .mar-hero h2{font-size:19px;font-weight:800;letter-spacing:.2px}
-  .mar-hero .mar-sub{font-size:12px;color:#c7d0e6;margin-top:3px}
-  .mar-stats{display:flex;gap:10px;margin-top:14px}
-  .mar-stat{flex:1;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 8px;text-align:center}
-  .mar-stat b{display:block;font-size:19px;font-weight:800;color:var(--orange)}
-  .mar-stat span{font-size:10px;color:#c7d0e6;text-transform:uppercase;letter-spacing:.4px}
-  .mar-progress{height:6px;border-radius:6px;background:rgba(255,255,255,.15);margin-top:14px;overflow:hidden}
-  .mar-progress i{display:block;height:100%;background:var(--orange);border-radius:6px;transition:width .3s}
-  .mar-pcap{font-size:11px;color:#c7d0e6;margin-top:6px;text-align:right}
-  .mar-ref{background:var(--card);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
-  .mar-ref summary{cursor:pointer;list-style:none;padding:13px 14px;font-size:13px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center}
-  .mar-ref summary::-webkit-details-marker{display:none}
-  .mar-ref summary .mar-chev{color:var(--text3);font-size:12px;transition:transform .2s}
-  .mar-ref[open] summary .mar-chev{transform:rotate(90deg)}
-  .mar-ref-body{padding:0 14px 14px;font-size:12px;color:var(--text2);line-height:1.5}
-  .mar-ref-body h4{font-size:12px;font-weight:800;color:var(--text);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.4px}
-  .mar-ref-body ul{margin:0 0 4px;padding-left:16px}
-  .mar-ref-body li{margin:2px 0}
-  .mar-ref-note{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);color:var(--text3)}
-  .mar-pace-tbl{width:100%;border-collapse:collapse;margin-top:2px}
-  .mar-pace-tbl td{padding:6px 4px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
-  .mar-pace-tbl td:first-child{color:var(--text);font-weight:700}
-  .mar-pace-tbl td:nth-child(2){color:var(--text2);text-align:right;white-space:nowrap}
-  .mar-pace-tbl tr:last-child td{border-bottom:none}
-  .mar-legend{font-size:11px;color:var(--text3);margin:8px 4px 14px;line-height:1.5}
-  .mar-wk{margin:16px 0 8px;font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:flex;justify-content:space-between;align-items:center}
-  .mar-wk .mar-wk-km{color:var(--text3);font-weight:700}
-  .mar-day{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 12px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start}
-  .mar-day.today{border-color:var(--orange);box-shadow:0 0 0 2px var(--orange-soft)}
-  .mar-day.done{opacity:.72}
-  .mar-day.rest{opacity:.85}
-  .mar-date{flex:0 0 44px;text-align:center}
-  .mar-date .mar-dow{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase}
-  .mar-date .mar-dnum{font-size:15px;font-weight:800;color:var(--text)}
-  .mar-body{flex:1;min-width:0}
-  .mar-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.25}
-  .mar-detail{font-size:12px;color:var(--text2);margin-top:2px;line-height:1.35}
-  .mar-makeup{font-size:12px;color:var(--orange);font-weight:700;margin-top:5px;line-height:1.35}
-  .mar-note{font-size:11px;color:var(--text3);margin-top:4px;font-style:italic}
-  .mar-tag{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle}
-  .mar-tag.peak{background:var(--orange-soft);color:var(--orange)}
-  .mar-tag.cutback{background:var(--green-bg);color:var(--green)}
-  .mar-tag.taper{background:rgba(11,27,63,.08);color:var(--navy)}
-  :root[data-theme="dark"] .mar-tag.taper{background:rgba(255,255,255,.1);color:#c7d0e6}
-  .mar-opt{margin-top:8px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:5px 11px 5px 8px;cursor:pointer}
-  .mar-opt .mar-optbox{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center}
-  .mar-opt .mar-optbox svg{width:11px;height:11px;stroke:transparent;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-  .mar-opt.on{color:var(--green);border-color:var(--green)}
-  .mar-opt.on .mar-optbox{background:var(--green);border-color:var(--green)}
-  .mar-opt.on .mar-optbox svg{stroke:#fff}
-  .mar-logbtn{margin-top:8px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--orange);background:var(--orange-soft);border:none;border-radius:16px;padding:6px 12px;cursor:pointer}
-  .mar-logged{margin-top:7px;font-size:12px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:7px 10px;line-height:1.4}
-  .mar-logged .mar-edit{color:var(--text2);font-weight:600;margin-left:8px;text-decoration:underline;cursor:pointer;font-size:11px}
-  .mar-logform{margin-top:9px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px}
-  .mar-logrow{display:flex;gap:8px}
-  .mar-logrow label{flex:1;font-size:11px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;gap:4px}
-  .mar-logrow input{border:1px solid var(--border2);border-radius:8px;padding:9px;font-size:15px;background:var(--card);color:var(--text);width:100%}
-  .mar-prev{margin-top:9px;font-size:13px;font-weight:800;color:var(--text)}
-  .mar-logbtns{margin-top:10px;display:flex;gap:8px}
-  .mar-logbtns button{flex:1;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer}
-  .mar-logbtns .mar-save{background:var(--orange);color:#fff}
-  .mar-logbtns .mar-cancel{background:var(--card);color:var(--text2);border:1px solid var(--border2)}
-  .mar-acts{flex:0 0 auto;display:flex;flex-direction:column;gap:6px}
-  .mar-btn{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  .mar-btn svg{width:18px;height:18px;stroke:var(--text3);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-  .mar-btn.done.on{background:var(--green);border-color:var(--green)}
-  .mar-btn.done.on svg{stroke:#fff}
-  .mar-btn.miss.on{background:#E5484D;border-color:#E5484D}
-  .mar-btn.miss.on svg{stroke:#fff}
-  .mar-race{background:linear-gradient(150deg,var(--orange),#d8560f);color:#fff;border-color:transparent}
-  .mar-race .mar-title,.mar-race .mar-detail{color:#fff}
-  .mar-race .mar-date .mar-dow,.mar-race .mar-date .mar-dnum{color:#fff}
-  `;
-  var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
-
-  var RACE=new Date(2026,9,4);
-  var openLog=null; /* iso of day whose log form is open (in-memory) */
-
-  function pad(n){return (n<10?'0':'')+n;}
-  function isoOf(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
-  function loadComp(){
-    try{
-      var v=JSON.parse(localStorage.getItem('rt_marathon')||'{}');
-      if(v && (v.p || v.o || v.log)) return {p:v.p||{}, o:v.o||{}, log:v.log||{}};
-      return {p:v||{}, o:{}, log:{}}; /* migrate old flat format */
-    }catch(e){ return {p:{},o:{},log:{}}; }
-  }
-  function saveComp(c){ try{localStorage.setItem('rt_marathon',JSON.stringify(c));}catch(e){} }
-
-  /* time helpers */
-  function parseTime(str){
-    if(str==null) return NaN;
-    str=(''+str).trim(); if(!str) return NaN;
-    if(str.indexOf(':')>=0){ var a=str.split(':'); var mm=parseFloat(a[0])||0; var ss=parseFloat(a[1])||0; return mm*60+ss; }
-    var f=parseFloat(str); return isNaN(f)?NaN:f*60; /* plain number = minutes */
-  }
-  function fmtPace(secPerKm){
-    var m=Math.floor(secPerKm/60), s=Math.round(secPerKm-m*60);
-    if(s===60){m++;s=0;} return m+':'+pad(s);
-  }
-  function calcLine(km,timeStr){
-    var sec=parseTime(timeStr);
-    if(!(km>0) || !(sec>0)) return null;
-    var pace=sec/km, speed=km/(sec/3600);
-    return {pace:fmtPace(pace), speed:speed.toFixed(1)};
-  }
-
-  function marPlan(){
-    var anchor=new Date(2026,6,27), start=new Date(2026,6,28), end=new Date(2026,9,4);
-    var q={1:'4 km easy tempo',2:'5 km, last 2 km @ 5:45/km',3:'6 km, 3\u00d71 km @ 5:40/km',4:'5 km easy',5:'6 km, 4\u00d71 km @ 5:40/km',6:'7 km, last 3 km @ goal',7:'6 km steady',8:'6 km, 3\u00d71.5 km @ goal',9:'5 km, last 3 km @ goal',10:'4 km easy'};
-    var qd={1:'Relaxed tempo, ~6:30/km (9.2 km/h)',2:'Easy ~8.5 km/h, last 2 km at 5:45/km (10.4 km/h)',3:'3 reps of 1 km at 5:40/km (10.6 km/h), easy jog between',4:'Easy, 7:00/km (8.6 km/h)',5:'4 reps of 1 km at 5:40/km (10.6 km/h), easy jog between',6:'Last 3 km at goal 5:41/km (10.5 km/h), rest easy',7:'Steady, ~6:30/km (9.2 km/h)',8:'3 reps of 1.5 km at goal 5:41/km (10.5 km/h), easy jog between',9:'Last 3 km at goal 5:41/km (10.5 km/h)',10:'Easy shakeout, 7:00/km (8.6 km/h)'};
-    var e={1:'5 km easy',2:'5 km easy',3:'5 km easy',4:'5 km easy',5:'6 km easy',6:'6 km easy',7:'6 km easy',8:'5 km easy',9:'5 km easy',10:'3 km shakeout'};
-    var lo={1:8,2:10,3:12,4:9,5:14,6:16,7:18,8:13,9:10};
-    var loTag={4:'cutback',7:'peak',8:'cutback',9:'taper'};
-    var swimOpt={label:'Swim lesson',note:'optional, no need to count it while learning'};
-    var days=[];
-    for(var d=new Date(start); d<=end; d.setDate(d.getDate()+1)){
-      var dt=new Date(d);
-      var wk=Math.floor(Math.round((dt-anchor)/86400000)/7)+1;
-      var dow=dt.getDay();
-      var cat='rest',title='Rest day',detail='',tag='',opt=null;
-      if(dow===1){ if(wk===10){cat='rest';title='Rest day';detail='Race week, keep it very easy';opt=swimOpt;} else {cat='lift';title='Lift A, full body';detail='Push and squat, ~40 min. Exercises up top';opt=swimOpt;} }
-      else if(dow===2){ cat='quality'; title=q[wk]; detail=qd[wk]; }
-      else if(dow===3){ cat='rest'; title='Rest day'; if(wk===6||wk===7){detail='Skip cycling this week, protect the long run';} else {detail='Easy day';opt={label:'Indoor cycle 45 min',note:'optional, only if you go'};} }
-      else if(dow===4){ cat='easy'; if(wk===10){title=e[wk];detail='Easy shakeout, ~8.5 km/h. No lift, race week';} else {title=e[wk]+' + Lift B';detail='Easy 7:00 to 7:15/km (8.3 to 8.6 km/h), then Lift B';} }
-      else if(dow===5){ cat='rest'; title='Rest day'; detail='Set up tomorrow\u2019s long run'; }
-      else if(dow===6){ if(wk===10){cat='rest';title='Rest, pre-race';detail='Legs fresh. Hydrate, carbs, early night';} else {cat='long';title='Long run '+lo[wk]+' km';detail='Slow, 7:00 to 7:15/km (8.3 to 8.6 km/h). Time on feet';tag=loTag[wk]||'';} }
-      else if(dow===0){ if(wk===10){cat='race';title='RACE, Half Marathon 21.1 km';detail='Goal 5:41/km (10.5-10.6 km/h). Start easy, ~6:00/km first km';} else {cat='rest';title='Rest day';detail='Optional gentle walk';} }
-      days.push({dt:dt,iso:isoOf(dt),dow:dow,wk:wk,cat:cat,title:title,detail:detail,tag:tag,opt:opt});
-    }
-    return days;
-  }
-
-  var PRIO={long:3,quality:2,easy:1};
-  function isRun(c){return c==='long'||c==='quality'||c==='easy';}
-  function loggable(c){return isRun(c)||c==='race';}
-
-  /* resolve the effective title + week for a given day (handles make-up hosts) */
-  function marDayInfo(iso){
-    var days=compute(loadComp());
-    for(var i=0;i<days.length;i++){
-      if(days[i].iso===iso){
-        var d=days[i];
-        var t=(d.makeup && d.cat==='rest') ? (d.makeup.label+' (make-up)') : d.title;
-        return {wk:d.wk, logTitle:t};
-      }
-    }
-    return {wk:0, logTitle:'Run'};
-  }
-
-  /* mirror a logged marathon run into the shared History (rt_entries) so it
-     persists alongside all other workouts and is never lost. Tagged mar:iso. */
-  function marMirror(iso,title,km,timeStr,wk){
-    if(typeof entries==='undefined') return;
-    var sec=parseTime(timeStr);
-    var pace=(km>0 && sec>0)?Math.round(sec/km):null;
-    var entry={
-      id:parseInt(iso.replace(/-/g,''),10),
-      title:title, kind:'run', activity:'run',
-      date:new Date(iso+'T12:00:00').toISOString(),
-      runSecs:sec>0?Math.round(sec):0,
-      distance:km>0?km:null,
-      paceSec:pace,
-      notes:'Marathon prep'+(wk?(' \u00b7 Week '+wk):''),
-      mar:iso
-    };
-    var idx=-1;
-    for(var i=0;i<entries.length;i++){ if(entries[i].mar===iso){ idx=i; break; } }
-    if(idx>=0) entries[idx]=entry; else entries.unshift(entry);
-    try{ saveEntries(); }catch(e){}
-  }
-  function marUnmirror(iso){
-    if(typeof entries==='undefined') return;
-    for(var i=0;i<entries.length;i++){ if(entries[i].mar===iso){ entries.splice(i,1); break; } }
-    try{ saveEntries(); }catch(e){}
-  }
-
-  function compute(comp){
-    var days=marPlan(), carry=null;
-    for(var i=0;i<days.length;i++){
-      var day=days[i];
-      day.status=comp.p[day.iso]||null;
-      day.optDone=!!comp.o[day.iso];
-      day.log=comp.log[day.iso]||null;
-      if(carry){
-        if(day.cat==='long'||day.cat==='quality'||day.cat==='race'){ day.carryDropped=carry; }
-        else { day.makeup=carry; if(carry.priority===3 && day.cat==='easy') day.replaced=true; }
-        carry=null;
-      }
-      if(day.status==='missed' && isRun(day.cat)){ carry={label:day.title,fromDow:day.dow,priority:PRIO[day.cat]}; day.carried=true; }
-    }
-    return days;
-  }
-
-  window.marToggle=function(iso,val){
-    var c=loadComp();
-    if(c.p[iso]===val){ delete c.p[iso]; } else { c.p[iso]=val; }
-    saveComp(c); renderMarathon();
-  };
-  window.marToggleOpt=function(iso){
-    var c=loadComp();
-    if(c.o[iso]){ delete c.o[iso]; } else { c.o[iso]=1; }
-    saveComp(c); renderMarathon();
-  };
-  window.marOpenLog=function(iso){ openLog=iso; renderMarathon(); };
-  window.marCancelLog=function(){ openLog=null; renderMarathon(); };
-  window.marPreview=function(iso){
-    var km=parseFloat(document.getElementById('mar-km-'+iso).value);
-    var t=document.getElementById('mar-time-'+iso).value;
-    var r=calcLine(km,t);
-    document.getElementById('mar-prev-'+iso).textContent = r ? ('Pace '+r.pace+' /km  \u00b7  '+r.speed+' km/h') : 'Enter distance and time to see your pace';
-  };
-  window.marSaveLog=function(iso){
-    var km=parseFloat(document.getElementById('mar-km-'+iso).value);
-    var t=(document.getElementById('mar-time-'+iso).value||'').trim();
-    var c=loadComp();
-    var info=marDayInfo(iso);
-    if(km>0 && parseTime(t)>0){ c.log[iso]={km:km,time:t}; marMirror(iso,info.logTitle,km,t,info.wk); }
-    c.p[iso]='done';
-    saveComp(c); openLog=null; renderMarathon();
-  };
-  window.marClearLog=function(iso){
-    var c=loadComp(); delete c.log[iso]; saveComp(c); marUnmirror(iso); openLog=null; renderMarathon();
-  };
-
-  window.renderMarathon=function(){
-    var el=document.getElementById('marathon-content'); if(!el) return;
-    var comp=loadComp();
-    var days=compute(comp);
-    var todayIso=isoOf(new Date());
-    var daysLeft=Math.max(0,Math.ceil((RACE-new Date())/86400000));
-
-    var sessions=days.filter(function(d){return d.cat!=='rest';});
-    var scheduledDone=sessions.filter(function(d){return d.status==='done';}).length;
-    var makeupDone=days.filter(function(d){return d.makeup && d.status==='done';}).length;
-    var doneCount=Math.min(sessions.length, scheduledDone+makeupDone);
-    var pct=sessions.length?Math.round(doneCount/sessions.length*100):0;
-    var totalKm=0; Object.keys(comp.log).forEach(function(k){ var v=comp.log[k]; if(v&&v.km>0) totalKm+=v.km; });
-
-    var wdShort=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var html='<div class="mar-wrap">';
-    html+='<div class="mar-hero"><h2>Baalu Marathon Prep</h2>'+
-          '<div class="mar-sub">Half Marathon &middot; Sunday 4 October 2026 &middot; target sub-2:00</div>'+
-          '<div class="mar-stats">'+
-            '<div class="mar-stat"><b>'+daysLeft+'</b><span>days to go</span></div>'+
-            '<div class="mar-stat"><b>'+doneCount+'/'+sessions.length+'</b><span>sessions</span></div>'+
-            '<div class="mar-stat"><b>'+totalKm.toFixed(1)+'</b><span>km logged</span></div>'+
-          '</div>'+
-          '<div class="mar-progress"><i style="width:'+pct+'%"></i></div>'+
-          '<div class="mar-pcap">'+pct+'% of the plan complete</div>'+
-          '</div>';
-
-    /* lift reference */
-    html+='<details class="mar-ref"><summary>Lift A &amp; Lift B exercises <span class="mar-chev">\u25b6</span></summary>'+
-      '<div class="mar-ref-body">'+
-        '<h4>Lift A &middot; push and squat</h4><ul>'+
-          '<li>Goblet or front squat, 3 \u00d7 8</li><li>Incline dumbbell press or push-ups, 3 \u00d7 10</li><li>Dumbbell shoulder press, 3 \u00d7 10</li><li>Lateral raises, 3 \u00d7 15</li><li>Triceps rope pushdown, 3 \u00d7 12</li><li>Plank, 3 \u00d7 45s</li></ul>'+
-        '<h4>Lift B &middot; pull and hinge</h4><ul>'+
-          '<li>Romanian deadlift, light, 3 \u00d7 8</li><li>Pull-ups or lat pulldown, 3 \u00d7 8</li><li>Dumbbell row, 3 \u00d7 10</li><li>Face pulls, 3 \u00d7 15</li><li>Bicep curls, 3 \u00d7 12</li><li>Hanging leg raise, 3 \u00d7 12</li></ul>'+
-        '<div class="mar-ref-note">Keep both light, this is maintenance to hold muscle, not growth. Closest to the app\u2019s Strength Training (Runna) sessions. Save the Weight Training split for the muscle block after the race.</div>'+
-      '</div></details>';
-
-    html+='<div class="mar-legend">Tap the check when done or the cross if missed. On run days use Log run to record distance and time, and it works out your pace and treadmill speed. A missed run carries to the next day unless that day is a key run. Swim and cycle are optional and do not count.</div>';
-
-    var lastWk=0;
-    days.forEach(function(d){
-      if(d.wk!==lastWk){
-        lastWk=d.wk;
-        var wkLong=days.filter(function(x){return x.wk===d.wk && x.cat==='long';})[0];
-        var kmTxt=wkLong?('long '+wkLong.title.replace('Long run ','')) :(d.wk===10?'RACE WEEK':'');
-        html+='<div class="mar-wk"><span>Week '+d.wk+' of 10</span><span class="mar-wk-km">'+kmTxt+'</span></div>';
-      }
-      var cls='mar-day';
-      if(d.iso===todayIso) cls+=' today';
-      if(d.status==='done') cls+=' done';
-      if(d.cat==='rest') cls+=' rest';
-      if(d.cat==='race') cls+=' mar-race';
-
-      var tagHtml=d.tag?(' <span class="mar-tag '+d.tag+'">'+d.tag+'</span>'):'';
-      var body='<div class="mar-title">'+d.title+tagHtml+'</div>';
-      if(d.detail) body+='<div class="mar-detail">'+d.detail+'</div>';
-      if(d.makeup){
-        var moved='Make-up run: '+d.makeup.label+' (moved from '+wdShort[d.makeup.fromDow]+')';
-        body+='<div class="mar-makeup">\u2794 '+moved+(d.replaced?', replaces today\u2019s easy run':'')+'</div>';
-      }
-      if(d.carried) body+='<div class="mar-note">Missed, carried to the next available day.</div>';
-      if(d.carryDropped) body+='<div class="mar-note">A missed run could not move here, tomorrow\u2019s key session takes priority.</div>';
-
-      /* logged summary or log button on run/race days, and make-up hosts */
-      if(loggable(d.cat) || d.makeup){
-        if(d.log){
-          var r=calcLine(d.log.km,d.log.time);
-          var line=d.log.km+' km';
-          if(d.log.time) line+='  \u00b7  '+d.log.time;
-          if(r) line+='  \u00b7  '+r.pace+' /km  \u00b7  '+r.speed+' km/h';
-          body+='<div class="mar-logged">'+line+'<span class="mar-edit" onclick="marOpenLog(\''+d.iso+'\')">edit</span></div>';
-        } else if(openLog!==d.iso){
-          body+='<button class="mar-logbtn" onclick="marOpenLog(\''+d.iso+'\')"><svg viewBox="0 0 24 24" width="13" height="13" style="stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round"><path d="M12 5v14M5 12h14"/></svg>Log run</button>';
-        }
-        if(openLog===d.iso){
-          var pk=d.log?d.log.km:'';
-          var ptv=d.log?(d.log.time||''):'';
-          var prevTxt = d.log ? (calcLine(d.log.km,d.log.time)?('Pace '+calcLine(d.log.km,d.log.time).pace+' /km  \u00b7  '+calcLine(d.log.km,d.log.time).speed+' km/h'):'Enter distance and time to see your pace') : 'Enter distance and time to see your pace';
-          body+='<div class="mar-logform">'+
-            '<div class="mar-logrow">'+
-              '<label>Distance (km)<input id="mar-km-'+d.iso+'" type="number" inputmode="decimal" step="0.01" value="'+pk+'" oninput="marPreview(\''+d.iso+'\')"></label>'+
-              '<label>Time (mm:ss)<input id="mar-time-'+d.iso+'" type="text" inputmode="numeric" placeholder="e.g. 58:30" value="'+ptv+'" oninput="marPreview(\''+d.iso+'\')"></label>'+
-            '</div>'+
-            '<div class="mar-prev" id="mar-prev-'+d.iso+'">'+prevTxt+'</div>'+
-            '<div class="mar-logbtns">'+
-              '<button class="mar-save" onclick="marSaveLog(\''+d.iso+'\')">Save</button>'+
-              (d.log?'<button class="mar-cancel" onclick="marClearLog(\''+d.iso+'\')">Delete</button>':'')+
-              '<button class="mar-cancel" onclick="marCancelLog()">Cancel</button>'+
-            '</div>'+
-          '</div>';
-        }
-      }
-
-      if(d.opt){
-        var onC=d.optDone?' on':'';
-        body+='<div class="mar-opt'+onC+'" onclick="marToggleOpt(\''+d.iso+'\')">'+
-          '<span class="mar-optbox"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>'+
-          d.opt.label+' <span style="opacity:.7;font-weight:500">('+d.opt.note+')</span></div>';
-      }
-
-      var acts='';
-      if(d.cat!=='rest' || d.makeup){
-        var doneOn=d.status==='done'?' on':'';
-        var missOn=d.status==='missed'?' on':'';
-        acts='<div class="mar-acts">'+
-          '<button class="mar-btn done'+doneOn+'" onclick="marToggle(\''+d.iso+'\',\'done\')" aria-label="Done"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>'+
-          '<button class="mar-btn miss'+missOn+'" onclick="marToggle(\''+d.iso+'\',\'missed\')" aria-label="Missed"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
-          '</div>';
-      }
-
-      html+='<div class="'+cls+'">'+
-        '<div class="mar-date"><div class="mar-dow">'+wdShort[d.dow]+'</div><div class="mar-dnum">'+d.dt.getDate()+'</div></div>'+
-        '<div class="mar-body">'+body+'</div>'+acts+
-        '</div>';
-    });
-    html+='</div>';
-    el.innerHTML=html;
-  };
-})();
 </script>
 <script>
 /* PWA offline support: register the service worker */
