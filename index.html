@@ -132,6 +132,12 @@ body::after{
 .rest-card{background:var(--navy);color:#fff;border-radius:24px;padding:30px 26px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);border:2px solid var(--orange)}
 .rest-card .rest-lbl{font-size:13px;letter-spacing:.22em;color:var(--orange);font-weight:800;margin-bottom:8px}
 .rest-card .rest-rem{font-size:76px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;margin-bottom:22px}
+.rest-minimize{margin-top:14px;background:none;border:none;color:rgba(255,255,255,.72);font-size:12px;font-weight:600;cursor:pointer}
+.rest-pill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom));z-index:200;display:flex;align-items:stretch;background:var(--navy);color:#fff;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.4);border:1.5px solid var(--orange);overflow:hidden}
+.rest-pill-inner{display:flex;align-items:center;gap:9px;padding:9px 8px 9px 16px;cursor:pointer}
+.rest-pill-lbl{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--orange)}
+.rest-pill .rest-rem{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;margin:0}
+.rest-pill-skip{background:var(--orange);border:none;color:#fff;font-size:13px;font-weight:700;padding:0 16px;cursor:pointer}
 .rest-controls{display:flex;gap:10px;margin-bottom:14px}
 .rest-adj{flex:1;background:rgba(255,255,255,.14);border:none;color:#fff;font-size:16px;font-weight:700;border-radius:12px;padding:14px 0;cursor:pointer}
 .rest-adj:active{background:rgba(255,255,255,.28)}
@@ -485,6 +491,16 @@ function lastSessionData(title, kind){
   return null;
 }
 
+/* last time this exercise was logged in ANY session -> its sets in order (for carry-forward) */
+function lastSetsForExercise(name){
+  for(const e of entries){
+    if(!e.flatSets) continue;
+    const sets=e.flatSets.filter(fs=>fs.name===name && (fs.reps!=null||fs.weight!=null||fs.secs!=null));
+    if(sets.length) return sets;
+  }
+  return null;
+}
+
 function buildLiveSession(preserve){
   // preserve: if true, carry over any values already entered in the current liveSession
   const prevLive = (preserve && liveSession) ? liveSession : null;
@@ -492,6 +508,7 @@ function buildLiveSession(preserve){
   const nl={kind:sess.kind, title:sess.title, subtitle:sess.subtitle, wIdx:sess.wIdx, hIdx:sess.hIdx, blocks:[]};
   // previous saved values for this exact programme (for pre-fill)
   const lastData = preserve ? null : lastSessionData(sess.title, sess.kind);
+  const exCache = {}; // cache per-exercise last sets (carry-forward fallback)
   sess.blocks.forEach((b,bi)=>{
     const sets=[];
     for(let s=0;s<b.sets;s++){
@@ -506,9 +523,12 @@ function buildLiveSession(preserve){
           const secs = (old.secs!==''&&old.secs!=null) ? old.secs : (m==='time'?defaultDur(name):'');
           return {name, reps:old.reps!=null?old.reps:'', weight:old.weight!=null?old.weight:'', secs, done:!!old.done};
         }
-        // 2) pre-fill from last time you did this programme (editable, not marked done)
-        if(lastData && lastData[name] && lastData[name][s]){
-          const p=lastData[name][s];
+        // 2) pre-fill: prefer same-session history, else the last time this exercise
+        //    was logged in ANY session (carry weight/reps forward week-to-week)
+        let pf = (!preserve && lastData && lastData[name]) ? lastData[name] : null;
+        if(!preserve && !pf){ pf = (name in exCache) ? exCache[name] : (exCache[name]=lastSetsForExercise(name)); }
+        if(pf && pf[s]){
+          const p=pf[s];
           return {name,
             reps:(p.reps!=null?p.reps:''),
             weight:(p.weight!=null?p.weight:''),
@@ -995,7 +1015,7 @@ function maybeStartRest(){
 function startRest(secs){
   if(restState&&restState.intervalId) clearInterval(restState.intervalId);
   acquireWake();
-  restState={remaining:secs, intervalId:null};
+  restState={remaining:secs, intervalId:null, minimized:false};
   restState.intervalId=setInterval(()=>{
     restState.remaining--;
     const el=document.getElementById('rest-rem');
@@ -1023,20 +1043,35 @@ function renderRestBar(){
   if(!bar){
     bar=document.createElement('div');
     bar.id='rest-bar';
-    bar.className='rest-overlay';
     document.body.appendChild(bar);
   }
-  bar.innerHTML=`
-    <div class="rest-card">
-      <div class="rest-lbl">REST</div>
-      <div class="rest-rem" id="rest-rem">${fmtSecs(restState.remaining)}</div>
-      <div class="rest-controls">
-        <button class="rest-adj" onclick="bumpRest(-15)">\u221215s</button>
-        <button class="rest-adj" onclick="bumpRest(15)">+15s</button>
+  if(restState.minimized){
+    bar.className='rest-pill';
+    bar.onclick=null;
+    bar.innerHTML=`
+      <div class="rest-pill-inner" onclick="expandRest()">
+        <span class="rest-pill-lbl">REST</span>
+        <span class="rest-rem" id="rest-rem">${fmtSecs(Math.max(restState.remaining,0))}</span>
       </div>
-      <button class="rest-skip" onclick="endRest(false)">Skip rest \u203a</button>
-    </div>`;
+      <button class="rest-pill-skip" onclick="event.stopPropagation();endRest(false)">Skip</button>`;
+  } else {
+    bar.className='rest-overlay';
+    bar.onclick=function(e){ if(e.target===bar) minimizeRest(); };
+    bar.innerHTML=`
+      <div class="rest-card">
+        <div class="rest-lbl">REST</div>
+        <div class="rest-rem" id="rest-rem">${fmtSecs(Math.max(restState.remaining,0))}</div>
+        <div class="rest-controls">
+          <button class="rest-adj" onclick="bumpRest(-15)">−15s</button>
+          <button class="rest-adj" onclick="bumpRest(15)">+15s</button>
+        </div>
+        <button class="rest-skip" onclick="endRest(false)">Skip rest ›</button>
+        <button class="rest-minimize" onclick="minimizeRest()">↓ Minimize — keep it running</button>
+      </div>`;
+  }
 }
+function minimizeRest(){ if(restState){ restState.minimized=true; renderRestBar(); } }
+function expandRest(){ if(restState){ restState.minimized=false; renderRestBar(); } }
 /* brief full-screen flash to catch your eye when rest ends */
 function flashScreen(){
   let f=document.createElement('div');
